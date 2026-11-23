@@ -37,7 +37,7 @@ Alternatively, you can run the helper script:
 ```
 or double-click `run_app.bat`.
 
-### Run Mathematical Verification Test Suite (15 Unit Tests)
+### Run Mathematical Verification Test Suite (21 Unit Tests)
 ```powershell
 $env:PYTHONPATH = "D:\sem5\ML\project"
 python -m pytest glassbox/tests -v
@@ -55,35 +55,56 @@ GlassBox is powered by an offline curated corpus of **64 landmark arXiv research
 
 ---
 
-## 3. Four-Stage Syllabus Architecture
+## 3. The 6-Stage End-to-End Interactive Pipeline Architecture
 
-### Stage 1: Feature Representation, 3D PCA & SVD Rank-k Simulator
-- **The Token Microscope:** Abstract text where words light up with visual intensity proportional to their exact $L_2$-normalized TF-IDF coordinate.
-- **Interactive Mathematical Derivation:** Shows the exact formula with real numbers plugged in:
-  $$\text{IDF}(t) = \ln\left(\frac{1 + 64}{1 + \text{DF}(t)}\right) + 1 = \ln\left(\frac{65}{1 + \dots}\right) + 1 = \dots$$
-  $$z(t, d) = c(t, d) \times \text{IDF}(t), \quad x(t, d) = \frac{z(t, d)}{\|z(:, d)\|_2}$$
-- **2D Vector Strip Heatmap:** Interactive Plotly heatmap displaying $(d, t)$ coordinates with hover inspection.
-- **3D PCA & SVD Canvas:**
-  - 64 papers plotted in 3D coordinate space with domain colors.
-  - Mean centroid $\boldsymbol{\mu}$, sample covariance matrix $\mathbf{\Sigma}$ rendered as an interactive heatmap, and principal component axes as 3D vectors.
-  - **SVD Rank-$k$ Simulator:** Toggle rank $k \in \{1, 2, 3\}$. Watch vectors snap from a 1D line ($k=1$) to the 2D principal plane ($k=2$) and back to original coordinates ($k=3$), tracking singular values $\sigma_i$ and Frobenius reconstruction error $\|X - \hat{X}_k\|_F$.
+### STAGE 1: Raw Corpus Hub
+- **Purpose:** Inspect unstructured scientific literature before machine learning operations.
+- **Features:**
+  - Complete browsing of 64 arXiv records with category chips, word counts, and metadata.
+  - Category distribution bar chart ($16 \times 4$ balanced partition).
+  - Corpus summary metrics (vocabulary baseline, character counts, average document length).
 
-### Stage 2: Supervised Linear Boundaries (LDA & SVM)
-- **Linear Discriminant Analysis (LDA) Simulator:**
-  - Interactive heatmaps for the **Within-Class Scatter Matrix ($S_W$)** and **Between-Class Scatter Matrix ($S_B$)**:
-    $$S_W = \sum_{c=1}^C \sum_{x \in \mathcal{C}_c} (x - \mu_c)(x - \mu_c)^T, \quad S_B = \sum_{c=1}^C N_c (\mu_c - \mu)(\mu_c - \mu)^T$$
-  - Solves the generalized eigenvalue problem $(S_W^{-1} S_B) w = \lambda w$.
-  - 2D projection scatter plot contrasting LDA with PCA to demonstrate how class-aware projection contracts within-class spread while maximizing centroid separation.
-- **Support Vector Machine (SVM) Margin Explorer:**
-  - Projects papers to 2D and fits a linear classifier for any category pair (e.g. Vision vs NLP).
-  - Explicitly highlights **Support Vectors** with glowing rings.
-  - Draws the separating hyperplane $\mathbf{w}^T \mathbf{x} + b = 0$ and margin gutters $\mathbf{w}^T \mathbf{x} + b = \pm 1$.
-  - **Regularization Slider $C$:** Move $C \in [0.01, 20.0]$ live to observe the margin width $\gamma = \frac{2}{\|\mathbf{w}\|_2}$ expand (soft margin) or contract (hard margin).
-  - Individual point inspector calculating functional margins $y_i (\mathbf{w}^T \mathbf{x}_i + b)$ and slack variables $\xi_i = \max(0, 1 - y_i(\mathbf{w}^T \mathbf{x}_i + b))$.
+### STAGE 2: Preprocessing & Linguistics Lab (Interactive Diffs)
+- **Purpose:** Follow the progressive sanitization and normalization of unstructured text into clean feature tokens.
+- **Features:**
+  - **Living Visual Diffs:** Select any abstract and watch text dynamically transform. Strikethrough red chips show stripped LaTeX math ($...$), URLs, digits, and punctuation.
+  - **Stopword Elimination:** Interactive table of filtered stopwords with their occurrence frequencies across the corpus.
+  - **Porter Stemmer vs. WordNet Lemmatizer Arena:** Side-by-side morphological comparison highlighting divergent transformations (e.g. `studies` $\to$ `studi` vs. `study`, `running` $\to$ `run`, `better` $\to$ `better` vs. `good`).
+  - **Vocabulary Contraction Funnel:** Dynamic stage-by-stage contraction meter tracking vocabulary reduction from Raw Words $\to$ Regex $\to$ Stopwords $\to$ Lemmatization.
 
-### Stage 3: Evidence Retrieval & Statistical Shift Laboratory
-- Preserves the 10-abstract teaching fixture demonstrating how global corpus statistics alter local retrieval rankings.
-- One-click teaching preset **"Hide new papers, refresh IDF"** demonstrating how diluting the rarity of a key term causes an untouched paper (**DOC-03**) to drop from Rank #5 out of the top-five shortlist.
+### STAGE 3: Vectorization & Feature Engineering
+- **Purpose:** Translate discrete linguistic tokens into numerical geometry.
+- **Features:**
+  - Count Matrix vs. TF-IDF toggle.
+  - **Plugged-in Math Substitution Cards:** Live numerical substitution for every term:
+    $$\text{IDF}(t) = \ln\left(\frac{1 + 64}{1 + \text{DF}(t)}\right) + 1 = \dots$$
+  - **N-gram Explosion Inspector:** Unigrams vs. Bigrams with feature space expansion metrics.
+  - **Matrix Sparsity Visualizer:** Interactive 2D heatmap showing $(d, t)$ coordinates with cell-level inspection.
+
+### STAGE 4: Linear Algebra & Geometric Reduction (PCA, SVD, LDA)
+- **Purpose:** Project high-dimensional representations onto low-dimensional principal and discriminant subspaces.
+- **Features:**
+  - **3D PCA Projection Canvas:** 64 papers plotted in 3D coordinate space colored by category, with mean centroid $\boldsymbol{\mu}$ and principal component vectors.
+  - **Scree Plot & Explained Variance:** Cumulative variance ratio $R^2$ curve.
+  - **Covariance Matrix Heatmap:** $\mathbf{\Sigma} = \frac{1}{n-1} X_c^T X_c$.
+  - **SVD Rank-$k$ Simulator:** Toggle rank $k \in \{1, 2, 3\}$. Watch points snap to the 1D line ($k=1$), 2D plane ($k=2$), and original coordinates ($k=3$), tracking singular values $\sigma_i$ and Frobenius reconstruction error $\|X - \hat{X}_k\|_F$.
+  - **Multiclass Fisher LDA:** Side-by-side interactive heatmaps of Within-Class Scatter Matrix ($S_W$) and Between-Class Scatter Matrix ($S_B$), showing how class labels separate cluster centroids while minimizing internal variance.
+
+### STAGE 5: Supervised Classifier Arena (SVM, Decision Tree, KNN, Naive Bayes)
+- **Purpose:** Compare linear, tree-based, non-parametric, and probabilistic decision boundaries on the same feature space.
+- **Features:**
+  - **SVM Margin Explorer:** Separating hyperplane $\mathbf{w}^T \mathbf{x} + b = 0$, margin gutters $\mathbf{w}^T \mathbf{x} + b = \pm 1$, glowing support vectors, and a reactive regularization slider $C \in [0.01, 20.0]$ controlling margin width $\gamma = \frac{2}{\|\mathbf{w}\|_2}$.
+  - **Decision Tree Split Math:** Step-by-step Gini Impurity and Entropy calculation for binary coordinate thresholds.
+  - **KNN Metric Neighborhood:** Interactive metric neighborhood ball around a test paper showing Euclidean distances and majority class voting.
+  - **Naive Bayes Probabilities:** Class prior $P(y)$ and likelihood products $\prod P(x_i \mid y)$ computing exact posterior distributions.
+
+### STAGE 6: Model MRI & Failure Debugger (Influence Functions & Evidence Shift)
+- **Purpose:** Diagnose model predictions, trace errors back to influential training instances, and analyze distribution shift.
+- **Features:**
+  - **Koh & Liang Empirical Influence Functions:** Calculates sample influence $\mathcal{I}_{\text{up, loss}}(z)$ to identify which training papers most strongly pull or push the decision boundary.
+  - **Top Culprits & Helpers:** Pinpoint the most influential training abstracts driving a misclassification.
+  - **Counterfactual Retraining:** Toggle the removal of top culprit papers and watch the decision boundary snap to its new position.
+  - **Evidence Under Shift (Lesson 1 Fixture):** One-click preset "Hide new papers, refresh IDF" demonstrating how diluting the rarity of a key term causes an untouched paper (`DOC-03`) to fall out of the top-five shortlist without changing its own text.
 
 ---
 
