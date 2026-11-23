@@ -1,19 +1,19 @@
-# GlassBox — From Text to Evidence
+# GlassBox — Interactive Mathematical Simulation Engine
 
-> **A Mathematical Teaching Lab for Machine Learning & Accelerated Data Science**  
-> Designed for university classroom projection and interactive lecture demonstrations.
+> **A Visual Mathematical Laboratory for Machine Learning & Data Science**  
+> Pedagogical visual simulation engine built in the spirit of 3Blue1Brown, Bret Victor's Explorable Explanations, and Distill.pub.
 
-GlassBox reveals the exact, deterministic mathematical mechanics behind modern NLP, dimensionality reduction, and retrieval systems. Rather than treating vectorization or vector retrieval as black boxes, students can pause at every transformation step, inspect exact values, and understand how changes in global corpus statistics alter local retrieval rankings.
+GlassBox transforms textbook formulas into interactive mathematical microscopes. Rather than presenting static tables or black-box predictions, students inspect step-by-step mathematical substitutions with real numbers plugged in, observe vector projections, manipulate SVD rank-$k$ approximations, and watch Support Vector Machine margins expand and contract live.
 
 ---
 
 ## 1. Quick Start & Execution Commands
 
 ### Environment Setup
-Dependencies require Python 3.10+ with `numpy`, `streamlit`, `plotly`, `pandas`, `pytest`, and `scikit-learn` (used solely for reference validation in test suites):
+Dependencies require Python 3.10+ with `numpy`, `streamlit`, `plotly`, `pandas`, `pytest`, and `scikit-learn`:
 
 ```bash
-# Navigate to project root
+# Navigate to project directory
 cd D:/sem5/ML/project
 
 # Install dependencies
@@ -21,99 +21,75 @@ pip install -r glassbox/requirements.txt
 ```
 
 ### Launch Interactive Teaching Lab
-```bash
-# Set PYTHONPATH and launch Streamlit
+```powershell
 $env:PYTHONPATH = "D:\sem5\ML\project"
 streamlit run glassbox/app.py
 ```
 
-### Run Mathematical Verification Test Suite
-```bash
+### Run Mathematical Verification Test Suite (15 Unit Tests)
+```powershell
 $env:PYTHONPATH = "D:\sem5\ML\project"
 python -m pytest glassbox/tests -v
 ```
 
 ---
 
-## 2. Course Syllabus & Lab Mapping
+## 2. The Core Data: Real 64-Paper Curated arXiv Corpus
 
-The implementation directly incorporates the notation, formulas, and scratch implementations from the course materials:
+GlassBox is powered by an offline curated corpus of **64 landmark arXiv research papers** across 4 balanced categories:
+- **`cs.CV` (Computer Vision):** 16 papers (*ResNet, ViT, YOLO, NeRF, U-Net, GAN, Mask R-CNN, Latent Diffusion, Segment Anything, Swin, PointNet, AlexNet, CLIP, DDPM, SimCLR, VGG*).
+- **`cs.CL` (Computation & Language / NLP):** 16 papers (*Attention Is All You Need / Transformer, BERT, GPT-3, RoBERTa, Word2Vec, T5, LLaMA, LoRA, ELMo, Sentence-BERT, InstructGPT, Seq2Seq, FlashAttention, Bahdanau Attention, Chain-of-Thought, DPO*).
+- **`cs.LG` (Deep Learning Theory):** 16 papers (*Adam, BatchNorm, Dropout, Double Descent, Understanding Deep Learning Generalization, Neural Tangent Kernel, LayerNorm, ResNet Ensembles, AdamW, Large-Batch Sharp Minima, Implicit Bias, VAE, Contrastive Predictive Coding, Loss Landscape, Fixup Initialization*).
+- **`stat.ML` (Optimization & Statistical Learning):** 16 papers (*Bottou SGD, FISTA Proximal Gradient, PAC-Bayes, Stein Variational Gradient Descent, Computational Optimal Transport, Differential Privacy DP-SGD, Frank-Wolfe, Minimax Linear Regression, Distributionally Robust Optimization, Variational Inference, Conformal Prediction, Kernel Ridge Regression, Algorithmic Stability, Non-Convex Optimization, High-Dimensional M-Estimators, Accelerated Stochastic Search*).
 
-| GlassBox Screen / Step | Course Module & Source Material Consulted | Direct Pedagogical Mapping |
+---
+
+## 3. Four-Stage Syllabus Architecture
+
+### Stage 1: Feature Representation, 3D PCA & SVD Rank-k Simulator
+- **The Token Microscope:** Abstract text where words light up with visual intensity proportional to their exact $L_2$-normalized TF-IDF coordinate.
+- **Interactive Mathematical Derivation:** Shows the exact formula with real numbers plugged in:
+  $$\text{IDF}(t) = \ln\left(\frac{1 + 64}{1 + \text{DF}(t)}\right) + 1 = \ln\left(\frac{65}{1 + \dots}\right) + 1 = \dots$$
+  $$z(t, d) = c(t, d) \times \text{IDF}(t), \quad x(t, d) = \frac{z(t, d)}{\|z(:, d)\|_2}$$
+- **2D Vector Strip Heatmap:** Interactive Plotly heatmap displaying $(d, t)$ coordinates with hover inspection.
+- **3D PCA & SVD Canvas:**
+  - 64 papers plotted in 3D coordinate space with domain colors.
+  - Mean centroid $\boldsymbol{\mu}$, sample covariance matrix $\mathbf{\Sigma}$ rendered as an interactive heatmap, and principal component axes as 3D vectors.
+  - **SVD Rank-$k$ Simulator:** Toggle rank $k \in \{1, 2, 3\}$. Watch vectors snap from a 1D line ($k=1$) to the 2D principal plane ($k=2$) and back to original coordinates ($k=3$), tracking singular values $\sigma_i$ and Frobenius reconstruction error $\|X - \hat{X}_k\|_F$.
+
+### Stage 2: Supervised Linear Boundaries (LDA & SVM)
+- **Linear Discriminant Analysis (LDA) Simulator:**
+  - Interactive heatmaps for the **Within-Class Scatter Matrix ($S_W$)** and **Between-Class Scatter Matrix ($S_B$)**:
+    $$S_W = \sum_{c=1}^C \sum_{x \in \mathcal{C}_c} (x - \mu_c)(x - \mu_c)^T, \quad S_B = \sum_{c=1}^C N_c (\mu_c - \mu)(\mu_c - \mu)^T$$
+  - Solves the generalized eigenvalue problem $(S_W^{-1} S_B) w = \lambda w$.
+  - 2D projection scatter plot contrasting LDA with PCA to demonstrate how class-aware projection contracts within-class spread while maximizing centroid separation.
+- **Support Vector Machine (SVM) Margin Explorer:**
+  - Projects papers to 2D and fits a linear classifier for any category pair (e.g. Vision vs NLP).
+  - Explicitly highlights **Support Vectors** with glowing rings.
+  - Draws the separating hyperplane $\mathbf{w}^T \mathbf{x} + b = 0$ and margin gutters $\mathbf{w}^T \mathbf{x} + b = \pm 1$.
+  - **Regularization Slider $C$:** Move $C \in [0.01, 20.0]$ live to observe the margin width $\gamma = \frac{2}{\|\mathbf{w}\|_2}$ expand (soft margin) or contract (hard margin).
+  - Individual point inspector calculating functional margins $y_i (\mathbf{w}^T \mathbf{x}_i + b)$ and slack variables $\xi_i = \max(0, 1 - y_i(\mathbf{w}^T \mathbf{x}_i + b))$.
+
+### Stage 3: Evidence Retrieval & Statistical Shift Laboratory
+- Preserves the 10-abstract teaching fixture demonstrating how global corpus statistics alter local retrieval rankings.
+- One-click teaching preset **"Hide new papers, refresh IDF"** demonstrating how diluting the rarity of a key term causes an untouched paper (**DOC-03**) to drop from Rank #5 out of the top-five shortlist.
+
+---
+
+## 4. Syllabus Mapping to Course Materials
+
+| GlassBox Feature | Course Module & Material Consulted | Direct Theoretical Alignment |
 | :--- | :--- | :--- |
-| **Step 1: Text to Matrix** | **UCS551 ADS Lab:** `2.Handling Unstructured Textual Data/6.Lab Session 3(b)-Preprocessed Corpus to Feature Matrix_Part1-Complete.ipynb`<br>**UML501 ML:** `4_Data Pre-Processing I_copy.pdf` | Implements the exact scratch term-frequency, smoothed inverse document frequency ($IDF$), unnormalized product ($Z$), and $L_2$ Euclidean row normalization matching `TfidfVectorizer(smooth_idf=True, norm='l2')`. |
-| **Step 2: 3D Geometric PCA** | **UCS551 ADS Theory:** `2.data pre-processing/6.Data Pre-Processing-IV.pdf` (Slides 9–23)<br>**UCS551 ADS Lab:** `6.1 Data preprocessing -iii/PCA_Scratch_Inbuilt.ipynb`<br>**UML501 ML:** `6_Data Pre-Processing-III.pdf` | Computes sample covariance $\Sigma = \frac{1}{n-1} X_c^T X_c$, solves the eigensystem via a custom symmetric Jacobi solver ($\det(\Sigma - \lambda I) = 0$), sorts eigenpairs, projects coordinates via $\text{scores} = X_c V_2$, and traces orthogonal residual drops. |
-| **Step 3: Evidence Retrieval** | **UML501 ML:** `2025_Syllabus.pdf` (Information Retrieval & Similarity Metrics)<br>**UCS551 ADS Theory:** `Structured and Unstructured Data.pdf` | Vector space model retrieval via unit-vector dot product cosine similarity $\sum_t \hat{q}(t) \hat{d}(t)$, reconciling exact per-term products to total score, and exposing high-scoring lexical traps. |
-| **Step 4: Evidence Under Shift** | **UML501 ML:** `Classification Evaluation Metrics.pptx` & Data Distribution Shift concepts | Demonstrates covariate/statistical corpus shift: freezing candidate eligibility while expanding the background corpus to prove that rarity ($IDF$) is a global relative property, not an intrinsic document feature. |
-
-*Note on Material Audit:* All course files in `D:/sem5/ML` and `D:/Conversational_AI/Accelerated_Data_Science` were inspected and preserved intact without modification. The existing project PDF (`D:/sem5/ML/project/ML_Project_Research_Report.pdf`) remains untouched.
+| **Token Microscope & Vector Strips** | `UCS551 ADS Lab: 2.Handling Unstructured Textual Data/6.Lab Session 3(b)` & `UML501: 4_Data Pre-Processing I` | Term frequencies, Laplace smoothed $IDF$, and $L_2$ Euclidean normalization. |
+| **3D PCA & SVD Rank-$k$** | `UCS551 ADS Theory: 6.Data Pre-Processing-IV.pdf` & `Lab: PCA_Scratch_Inbuilt.ipynb` | Sample covariance $\Sigma = \frac{1}{n-1} X_c^T X_c$, symmetric Jacobi eigensolution, and Eckart-Young-Mirsky truncated SVD approximation. |
+| **Multiclass LDA Scatter** | `UCS551 ADS Theory: 8.Data Pre-Processing-VI.pdf` & `Lab: LDA_Scratch_Inbuilt.ipynb` | Within-class scatter $S_W$, between-class scatter $S_B$, and Fisher generalized eigenproblem $(S_W^{-1} S_B) w = \lambda w$. |
+| **SVM Margin Gutters** | `UML501: 2025_Syllabus.pdf` & `Classification Evaluation Metrics` | Linear separating hyperplanes, support vectors on margin boundaries, and slack variable penalty $C$. |
 
 ---
 
-## 3. Mathematical & Numerical Conventions
+## 5. Verification Suite
 
-GlassBox adheres strictly to educational and reproducible conventions:
-
-### Tokenization & Vocabulary
-- **Token Pattern:** `(?u)\b\w+\b` (Unicode word characters bounded by word boundaries, converted to lowercase).
-- **Vocabulary Ordering:** Alphabetically sorted list of distinct tokens across training corpus, producing deterministic index mappings $0, 1, \dots, V-1$.
-
-### Vectorization Formulas
-$$c(t, d) = \text{Raw integer count of term } t \text{ in document } d$$
-$$f(t, d) = \frac{c(t, d)}{\sum_{t' \in d} c(t', d)} \quad (\text{Relative term frequency with named denominator})$$
-$$\text{idf}(t) = \ln\left(\frac{1 + N}{1 + \text{DF}(t)}\right) + 1 \quad (\text{Natural log, smoothed with Laplace constants})$$
-$$z(t, d) = c(t, d) \times \text{idf}(t) \quad (\text{Unnormalized TF-IDF weight})$$
-$$x(t, d) = \frac{z(t, d)}{\|z(:, d)\|_2} = \frac{z(t, d)}{\sqrt{\sum_{t'} z(t', d)^2}} \quad (\text{L2-normalized coordinate for } \|z\|_2 > 0)$$
-
-### Sample Covariance & Jacobi Eigensolver
-$$X_c = X - \mu, \quad \mu = \frac{1}{n}\sum_{i=1}^n x_i$$
-$$\Sigma = \frac{1}{n - 1} X_c^T X_c \in \mathbb{R}^{3 \times 3}$$
-- **Jacobi Rotation:** Iteratively targets the maximum off-diagonal element $A_{pq}$ ($p < q$), computes rotation angle $\tau = \frac{A_{qq} - A_{pp}}{2 A_{pq}}$, $t = \frac{\text{sgn}(\tau)}{|\tau| + \sqrt{1 + \tau^2}}$, $c = \frac{1}{\sqrt{1 + t^2}}$, $s = t \cdot c$, applying Givens transformations until $\max |A_{pq}| < 10^{-12}$.
-- **Sign Convention:** The coordinate with the largest absolute magnitude in each eigenvector is enforced positive ($v_{k, j} \ge 0$).
-- **Projection:**
-  $$\text{scores} = X_c V_2 \in \mathbb{R}^{n \times 2}, \quad \tilde{X} = \text{scores} V_2^T + \mu \in \mathbb{R}^{n \times 3}$$
-  $$\text{Residual (orthogonal distance)}: \quad r_i = X_i - \tilde{X}_i, \quad r_i \cdot v_1 = 0, \quad r_i \cdot v_2 = 0$$
-
-### Full-Vector Retrieval & Score Reconciliation
-$$\text{score}(q, d) = \sum_{t \in \mathcal{V}} \hat{q}(t) \times \hat{d}(t) = \sum_{t \in \mathcal{V}} \text{contribution}(t)$$
-- Stable tie-breaking: Sort key is `(-score, doc_id)`.
-
----
-
-## 4. Classroom Lecture Walkthrough: The "Evidence Under Shift" Preset
-
-Here is a 5-minute teaching script a professor can follow live in class:
-
-### Phase 1: Establish the Baseline (Step 1 & Step 3)
-1. **Open Step 1:** Point out the default teaching claim:  
-   *"Synaptic consolidation during non-REM sleep stabilizes associative memory."*
-2. Select **DOC-01** and term **`synaptic`**. Walk students through the Mathematical Inspector on the right: show $N=7$, $\text{DF}=4$, $\text{idf}=1.4700$, and observe how $L_2$ normalization converts raw word frequencies into unit-sphere coordinates.
-3. **Move to Step 3:** View the baseline ranking.
-   - Note that **DOC-03** (*"Structural Dendritic Spine Remodeling Underpins Neocortical Memory Consolidation"*) ranks **#5** with similarity `0.2573` (inside the Top 5 shortlist).
-   - Click **"Reveal Fixture Expert Annotation"**. Point to **DOC-04** (Rank #3 or #4): point out that DOC-04 is a **Lexical Trap**—it scores high solely because it contains the words *synaptic*, *consolidation*, and *memory*, despite proving that awake exploration *destabilizes* memory!
-
-### Phase 2: Formulate the Hypothesis Question (Step 4)
-1. **Navigate to Step 4 (Evidence Under Shift).**
-2. Ask the class:  
-   > *"If we keep the candidate list strictly fixed to the original 7 papers and introduce 3 new unrelated papers only into the corpus IDF statistics, can an original paper move or drop out of the top five?"*
-3. Most students assume that because candidate eligibility and document texts are identical, rankings must remain invariant.
-
-### Phase 3: Execute the Shift Preset (One-Click Reveal)
-1. Click **"⭐ Apply Teaching Preset: Hide new papers, refresh IDF"**.
-2. **Observe the Result:**
-   - **DOC-03** drops from **Rank #5 to Rank #6**, falling completely off the shortlist!
-   - **DOC-06** rises to take the #5 spot!
-3. **Inspect the Demoted Focus Paper (`DOC-03`):**
-   - In the baseline corpus ($N=7$), `consolidation` appeared in only 4 papers ($\text{DF}=4, \text{IDF}=1.4700$).
-   - The 3 incoming papers (studying orthopedic bone consolidation and fiscal economic consolidation) increase `DF('consolidation')` to 7 ($N=10$), diluting its $\text{IDF}$ down to `1.3185` (-10.3%).
-   - Because DOC-03 relies heavily on `consolidation`, its relative coordinate shrinks. Meanwhile, competitor document DOC-06 contains query terms whose rarity was preserved (`stabilizes`, `associative`, `memory`).
-   - Thus, DOC-06 surpasses DOC-03 without changing a single character in either paper.
-
----
-
-## 5. Architectural Guide for Subsequent Lessons
-
-Lesson 1 establishes modular foundations that subsequent lessons will extend:
-- **Lesson 2 (Feature Selection & Rank-k SVD):** Will import `TextVectorizer` to demonstrate column masking vs feature elimination, computing compact truncated SVD $U_k \Sigma_k V_k^T$ and residual Frobenius loss.
-- **Lesson 3 (Linear Discriminant Analysis):** Will reuse the centered projections from `geometry.py`, computing within-class scatter $S_W = \sum (x - \mu_c)(x - \mu_c)^T$ and between-class scatter $S_B = \sum n_c (\mu_c - \mu)(\mu_c - \mu)^T$ to contrast Fisher's discriminant axis against unsupervised PCA.
-- **Lesson 4 (Model MRI):** Will train a regularized linear model on claim–abstract pairs, computing parameter influence $\mathcal{I}_{\text{up, loss}}(z)$ via Hessian vector products to attribute erroneous predictions to lexical shortcuts.
+15 unit tests verify numerical accuracy, scikit-learn reference agreement, and mathematical invariant properties:
+- `test_classifiers.py`: arXiv corpus balance (16 per category), SVD rank-$k$ monotonicity, LDA scatter matrix symmetry/eigenvalues, and SVM margin width $\gamma = 2 / \|\mathbf{w}\|$.
+- `test_math.py`: Hand calculations, scikit-learn $TF$-$IDF$ agreement within $10^{-5}$, Jacobi eigenpair residuals $< 10^{-10}$, and projection orthogonality.
+- `test_shift.py`: All 4 Evidence Under Shift combinations and target paper demotion.

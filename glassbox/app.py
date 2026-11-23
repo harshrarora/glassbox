@@ -1,12 +1,16 @@
-"""GlassBox: Lesson 1 — Vectorization, Geometric PCA, Evidence Retrieval, and Shift.
+"""GlassBox: Interactive Mathematical Simulation Engine.
 
-Interactive mathematical teaching lab for university machine learning and data science instruction.
+Pedagogical Visual Laboratory:
+  Stage 1: Token Microscope, Matrix Heatmap, 3D PCA & SVD Rank-k Snapping
+  Stage 2: LDA Scatter Matrices (S_W, S_B) & SVM Margin Gutters
+  Stage 3: Evidence Under Shift & Lesson 1 Teaching Preset
 """
 
 import sys
 import os
+import re
 
-# Ensure local glassbox package is importable
+# Ensure local package importability
 current_dir = os.path.dirname(os.path.abspath(__file__))
 parent_dir = os.path.dirname(current_dir)
 if current_dir not in sys.path:
@@ -21,14 +25,28 @@ import plotly.graph_objects as go
 import streamlit as st
 
 from glassbox.core.vectorizer import TextVectorizer
-from glassbox.core.geometry import fit_pca_3d, PCA3DResult
+from glassbox.core.geometry import (
+    fit_pca_3d,
+    PCA3DResult,
+    compute_svd_rank_k,
+    SVDRankKResult,
+)
+from glassbox.core.classifiers import (
+    LDASimulator,
+    LDAResult,
+    SVMSimulator,
+    SVMResult,
+)
 from glassbox.core.retrieval import (
     EvidenceRetrieval,
     SearchResult,
     QueryStatus,
 )
+from glassbox.data.arxiv_corpus import (
+    PaperRecord,
+    get_arxiv_corpus,
+)
 from glassbox.data.fixture import (
-    ResearchAbstract,
     DEFAULT_TEACHING_CLAIM,
     DEFAULT_PCA_TERMS,
     get_teaching_fixture,
@@ -37,93 +55,65 @@ from glassbox.data.fixture import (
 )
 
 # -----------------------------------------------------------------------------
-# Configuration and Styling
+# Configuration and Global Styling (3Blue1Brown / Explorable Style)
 # -----------------------------------------------------------------------------
 st.set_page_config(
-    page_title="GlassBox — From Text to Evidence",
+    page_title="GlassBox — Mathematical Simulation Engine",
     page_icon="🔬",
     layout="wide",
     initial_sidebar_state="expanded",
 )
 
-# Custom High-Contrast Educational Styling
 st.markdown(
     """
     <style>
-    .main-header {
-        font-size: 2.1rem;
-        font-weight: 700;
-        color: #0f172a;
+    @import url('https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;600&family=Inter:wght@400;600;700&display=swap');
+
+    .main-title {
+        font-family: 'Inter', sans-serif;
+        font-size: 2.3rem;
+        font-weight: 800;
+        background: linear-gradient(90deg, #1e293b 0%, #3b82f6 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
         margin-bottom: 0.2rem;
     }
-    .sub-header {
+    .sub-title {
         font-size: 1.05rem;
-        color: #475569;
-        margin-bottom: 1.2rem;
+        color: #64748b;
+        margin-bottom: 1.4rem;
+        line-height: 1.5;
     }
-    .step-pill {
-        display: inline-block;
-        padding: 4px 14px;
-        border-radius: 16px;
-        font-size: 0.85rem;
-        font-weight: 600;
-        background-color: #e0e7ff;
-        color: #3730a3;
-        margin-right: 8px;
-    }
-    .metric-card {
+    .badge-cv { background-color: #d1fae5; color: #065f46; padding: 3px 8px; border-radius: 6px; font-weight: 700; font-size: 0.8rem; }
+    .badge-cl { background-color: #e0e7ff; color: #3730a3; padding: 3px 8px; border-radius: 6px; font-weight: 700; font-size: 0.8rem; }
+    .badge-lg { background-color: #fef3c7; color: #92400e; padding: 3px 8px; border-radius: 6px; font-weight: 700; font-size: 0.8rem; }
+    .badge-stat { background-color: #ffe4e6; color: #9f1239; padding: 3px 8px; border-radius: 6px; font-weight: 700; font-size: 0.8rem; }
+
+    .math-card {
         background-color: #f8fafc;
         border: 1px solid #e2e8f0;
-        border-radius: 8px;
-        padding: 14px;
-        margin-bottom: 12px;
+        border-radius: 10px;
+        padding: 16px 20px;
+        margin-bottom: 14px;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.05);
     }
-    .highlight-doc {
-        border-left: 4px solid #2563eb;
-        background-color: #eff6ff;
-        padding: 10px 14px;
-        border-radius: 0 8px 8px 0;
-        margin-bottom: 10px;
-    }
-    .highlight-term {
-        background-color: #fef08a;
-        color: #854d0e;
-        padding: 2px 6px;
-        border-radius: 4px;
-        font-weight: 600;
-        border: 1px solid #facc15;
-    }
-    .annotation-trap {
-        background-color: #fef2f2;
-        border: 1px solid #fecaca;
-        color: #991b1b;
-        padding: 10px;
-        border-radius: 6px;
-        font-size: 0.9rem;
-    }
-    .annotation-support {
-        background-color: #f0fdf4;
-        border: 1px solid #bbf7d0;
-        color: #166534;
-        padding: 10px;
-        border-radius: 6px;
-        font-size: 0.9rem;
-    }
-    .annotation-comp {
-        background-color: #f8fafc;
+    .math-step {
+        font-family: 'Fira Code', monospace;
+        font-size: 0.95rem;
+        color: #1e293b;
+        background: #ffffff;
         border: 1px solid #cbd5e1;
-        color: #334155;
-        padding: 10px;
+        padding: 8px 12px;
         border-radius: 6px;
-        font-size: 0.9rem;
+        margin: 6px 0;
     }
-    .question-box {
-        background-color: #fefce8;
-        border: 1px solid #fef08a;
-        border-radius: 8px;
-        padding: 12px 16px;
+    .takeaway-box {
+        background: linear-gradient(135deg, #eff6ff 0%, #f0fdf4 100%);
+        border: 1px solid #bfdbfe;
+        border-radius: 10px;
+        padding: 14px 18px;
+        color: #1e3a8a;
         margin-top: 14px;
-        color: #713f12;
     }
     </style>
     """,
@@ -131,811 +121,337 @@ st.markdown(
 )
 
 # -----------------------------------------------------------------------------
-# Session State Initialization
-# -----------------------------------------------------------------------------
-if "step" not in st.session_state:
-    st.session_state.step = 1
-
-if "selected_doc_id" not in st.session_state:
-    st.session_state.selected_doc_id = "DOC-01"
-
-if "selected_term" not in st.session_state:
-    st.session_state.selected_term = "synaptic"
-
-if "matrix_view_type" not in st.session_state:
-    st.session_state.matrix_view_type = "L2-Normalized TF-IDF"
-
-if "pca_stage" not in st.session_state:
-    st.session_state.pca_stage = 1
-
-if "query_input" not in st.session_state:
-    st.session_state.query_input = DEFAULT_TEACHING_CLAIM
-
-if "reveal_annotations" not in st.session_state:
-    st.session_state.reveal_annotations = False
-
-if "shift_include_incoming" not in st.session_state:
-    st.session_state.shift_include_incoming = False
-
-if "shift_refresh_idf" not in st.session_state:
-    st.session_state.shift_refresh_idf = True
-
-if "shift_target_focus" not in st.session_state:
-    st.session_state.shift_target_focus = "DOC-03"
-
-
-# -----------------------------------------------------------------------------
-# Cached Data & Vectorizer Fitters
+# Cached Datasets and Vectorizers
 # -----------------------------------------------------------------------------
 @st.cache_data
-def get_corpora():
-    all_abstracts = get_teaching_fixture()
-    orig_abstracts = get_original_corpus()
-    incoming_abstracts = get_incoming_batch()
-    return all_abstracts, orig_abstracts, incoming_abstracts
+def load_arxiv_data():
+    return get_arxiv_corpus()
 
+arxiv_papers = load_arxiv_data()
+arxiv_texts = [p.abstract for p in arxiv_papers]
+arxiv_categories = [p.category for p in arxiv_papers]
+arxiv_id_to_paper = {p.id: p for p in arxiv_papers}
 
-all_docs, orig_docs, incoming_docs = get_corpora()
-orig_texts = [d.abstract for d in orig_docs]
-all_texts = [d.abstract for d in all_docs]
-orig_ids = [d.doc_id for d in orig_docs]
-all_ids = [d.doc_id for d in all_docs]
-doc_id_to_doc = {d.doc_id: d for d in all_docs}
-
+CATEGORY_COLORS = {
+    "cs.CV": "#10b981",    # Emerald
+    "cs.CL": "#6366f1",    # Indigo
+    "cs.LG": "#f59e0b",    # Amber
+    "stat.ML": "#f43f5e",   # Rose
+}
 
 @st.cache_resource
-def get_fitted_baseline_vectorizer():
-    vec = TextVectorizer()
-    vec.fit(orig_texts)
-    c, z, x = vec.transform(orig_texts)
+def get_arxiv_vectorizer():
+    vec = TextVectorizer().fit(arxiv_texts)
+    c, z, x = vec.transform(arxiv_texts)
     return vec, c, z, x
 
-
-vec_orig, c_orig, z_orig, x_orig = get_fitted_baseline_vectorizer()
-
-
-@st.cache_resource
-def get_refreshed_idf_vectorizer():
-    # Frozen vocabulary from baseline, refreshed DF and IDF across all 10 texts
-    vec_ref = TextVectorizer()
-    vec_ref.feature_names = list(vec_orig.feature_names)
-    vec_ref.vocabulary = dict(vec_orig.vocabulary)
-    vec_ref.n_documents = len(all_texts)
-
-    v_size = len(vec_orig.feature_names)
-    df_ref = np.zeros(v_size, dtype=np.int64)
-    for t_doc in [vec_ref.tokenizer(d) for d in all_texts]:
-        for term in set(t_doc):
-            if term in vec_ref.vocabulary:
-                df_ref[vec_ref.vocabulary[term]] += 1
-    vec_ref.doc_frequencies = df_ref
-    vec_ref.idf_weights = np.log((1.0 + vec_ref.n_documents) / (1.0 + df_ref)) + 1.0
-    vec_ref.is_fitted = True
-    return vec_ref
-
-
-vec_refreshed = get_refreshed_idf_vectorizer()
-
+vec_arxiv, c_arxiv, z_arxiv, x_arxiv = get_arxiv_vectorizer()
 
 # -----------------------------------------------------------------------------
-# Sidebar Navigation and Global Controls
+# Global Navigation & Mode Selection
 # -----------------------------------------------------------------------------
 with st.sidebar:
-    st.markdown("### 🔬 GlassBox Lab")
-    st.markdown("**Course Modules:** UML501 (ML) / UCS551 (ADS)")
+    st.markdown("## 🔬 GlassBox Lab")
+    st.markdown("**Pedagogical Visual Simulation Engine**")
+    st.caption("UML501 (Machine Learning) & UCS551 (Accelerated Data Science)")
     st.markdown("---")
 
-    st.markdown("#### Lesson 1 Roadmap")
-    step_labels = [
-        "1. Text to Matrix",
-        "2. 3D Geometric PCA",
-        "3. Evidence Retrieval",
-        "4. Evidence Under Shift",
-    ]
-
-    selected_step_radio = st.radio(
-        "Current Step:",
-        options=[1, 2, 3, 4],
-        format_func=lambda s: step_labels[s - 1],
-        index=st.session_state.step - 1,
+    mode = st.radio(
+        "Simulation Stage:",
+        options=[
+            "1. Feature Vectors, 3D PCA & SVD Simulator",
+            "2. Supervised LDA (S_W/S_B) & SVM Margin Explorer",
+            "3. Evidence Retrieval & Shift Laboratory",
+        ],
+        index=0,
     )
-    if selected_step_radio != st.session_state.step:
-        st.session_state.step = selected_step_radio
-        st.rerun()
 
     st.markdown("---")
-    st.markdown("#### Classroom Navigation")
-    col_nav1, col_nav2 = st.columns(2)
-    with col_nav1:
-        if st.button("⬅️ Back", disabled=(st.session_state.step == 1), use_container_width=True):
-            st.session_state.step -= 1
-            st.rerun()
-    with col_nav2:
-        if st.button("Next ➡️", disabled=(st.session_state.step == 4), use_container_width=True):
-            st.session_state.step += 1
-            st.rerun()
-
-    if st.button("🔄 Reset to Preset", use_container_width=True):
-        st.session_state.step = 1
-        st.session_state.selected_doc_id = "DOC-01"
-        st.session_state.selected_term = "synaptic"
-        st.session_state.matrix_view_type = "L2-Normalized TF-IDF"
-        st.session_state.pca_stage = 1
-        st.session_state.query_input = DEFAULT_TEACHING_CLAIM
-        st.session_state.reveal_annotations = False
-        st.session_state.shift_include_incoming = False
-        st.session_state.shift_refresh_idf = True
-        st.session_state.shift_target_focus = "DOC-03"
-        st.rerun()
-
-    st.markdown("---")
-    st.markdown(
-        """
-        <div style="font-size:0.8rem; color:#64748b; line-height:1.4;">
-        <b>Teaching Fixture:</b><br>
-        • 7 Original Abstracts (N=7)<br>
-        • 3 Incoming Abstracts<br>
-        • Synthetic corpus for rigorous mathematical transparency.
-        </div>
-        """,
-        unsafe_allow_html=True,
-    )
-
-# -----------------------------------------------------------------------------
-# Step Header
-# -----------------------------------------------------------------------------
-header_col1, header_col2 = st.columns([3, 1])
-with header_col1:
-    st.markdown(
-        f'<div class="main-header"><span class="step-pill">Step {st.session_state.step} of 4</span>'
-        f'{step_labels[st.session_state.step - 1]}</div>',
-        unsafe_allow_html=True,
-    )
-
-with header_col2:
-    st.markdown(
-        f'<div style="text-align:right; padding-top:10px; color:#64748b; font-size:0.9rem;">'
-        f'Active Document: <b>{st.session_state.selected_doc_id}</b> | Term: <b>{st.session_state.selected_term}</b></div>',
-        unsafe_allow_html=True,
-    )
-
-st.markdown("---")
-
-# =============================================================================
-# STEP 1: Turn text into a matrix
-# =============================================================================
-if st.session_state.step == 1:
-    st.markdown(
-        '<div class="sub-header">Select any document and vocabulary term to inspect exact counts, '
-        "relative frequency, smoothed IDF, and L2 normalization side by side.</div>",
-        unsafe_allow_html=True,
-    )
-
-    # Top Controls for Step 1
-    ctrl_col1, ctrl_col2, ctrl_col3 = st.columns([1.2, 1.2, 1.6])
-    with ctrl_col1:
-        doc_options = orig_ids
-        doc_idx_current = doc_options.index(st.session_state.selected_doc_id) if st.session_state.selected_doc_id in doc_options else 0
-        new_doc_id = st.selectbox(
-            "Select Document (Abstract):",
-            options=doc_options,
-            index=doc_idx_current,
-            format_func=lambda did: f"{did}: {doc_id_to_doc[did].title[:35]}...",
-        )
-        if new_doc_id != st.session_state.selected_doc_id:
-            st.session_state.selected_doc_id = new_doc_id
-            st.rerun()
-
-    with ctrl_col2:
-        vocab_options = vec_orig.feature_names
-        term_idx_current = vocab_options.index(st.session_state.selected_term) if st.session_state.selected_term in vocab_options else 0
-        new_term = st.selectbox("Select Vocabulary Term:", options=vocab_options, index=term_idx_current)
-        if new_term != st.session_state.selected_term:
-            st.session_state.selected_term = new_term
-            st.rerun()
-
-    with ctrl_col3:
-        st.session_state.matrix_view_type = st.radio(
-            "Matrix Numerical View:",
-            options=["Raw Counts", "TF-IDF (Unnormalized)", "L2-Normalized TF-IDF"],
-            index=["Raw Counts", "TF-IDF (Unnormalized)", "L2-Normalized TF-IDF"].index(st.session_state.matrix_view_type),
-            horizontal=True,
-        )
-
-    col_doc_view, col_matrix_view, col_inspector = st.columns([1.1, 1.5, 1.4])
-
-    active_doc = doc_id_to_doc[st.session_state.selected_doc_id]
-    active_doc_idx = orig_ids.index(st.session_state.selected_doc_id)
-
-    # 1. Document Text Panel with Linked Term Highlighting
-    with col_doc_view:
-        st.markdown(f"#### 📄 {active_doc.doc_id}: Title & Text")
-        st.markdown(f"**{active_doc.title}**")
-        st.caption(f"Category: `{active_doc.category}` | Synthetic Corpus")
-
-        # Highlight occurrences of selected term in text
-        highlighted_text = active_doc.abstract
-        sel_term = st.session_state.selected_term
-        import re
-        pattern = re.compile(rf"\b({re.escape(sel_term)})\b", re.IGNORECASE)
-        highlighted_text = pattern.sub(r'<mark class="highlight-term">\1</mark>', highlighted_text)
-
-        st.markdown(
-            f'<div class="highlight-doc">{highlighted_text}</div>',
-            unsafe_allow_html=True,
-        )
-        st.info(f"Term **'{sel_term}'** occurrences are highlighted above in yellow.")
-
-    # 2. Document-Term Matrix Panel
-    with col_matrix_view:
-        st.markdown(f"#### 📊 Document-Term Matrix: {st.session_state.matrix_view_type}")
-
-        # Choose between featured teaching columns vs full vocabulary
-        show_all_cols = st.checkbox("Show full vocabulary (all 90+ terms)", value=False)
-        featured_terms = [
-            "synaptic", "consolidation", "decay", "sleep", "associative",
-            "stabilizes", "memory", "slow", "spindles", "plasticity"
-        ]
-        # Ensure selected term is always in displayed columns
-        if sel_term not in featured_terms and not show_all_cols:
-            display_terms = [sel_term] + featured_terms
-        else:
-            display_terms = vec_orig.feature_names if show_all_cols else featured_terms
-
-        # Select data matrix according to view toggle
-        if st.session_state.matrix_view_type == "Raw Counts":
-            matrix_data = c_orig
-            format_str = "{:.0f}"
-        elif st.session_state.matrix_view_type == "TF-IDF (Unnormalized)":
-            matrix_data = z_orig
-            format_str = "{:.3f}"
-        else:
-            matrix_data = x_orig
-            format_str = "{:.4f}"
-
-        # Build DataFrame for display
-        df_display = pd.DataFrame(
-            matrix_data,
-            index=orig_ids,
-            columns=vec_orig.feature_names,
-        )[display_terms]
-
-        # Style selected row, selected column, and selected cell
-        def highlight_matrix_cells(df):
-            styler_df = pd.DataFrame("", index=df.index, columns=df.columns)
-            for r in df.index:
-                for c in df.columns:
-                    is_row = (r == st.session_state.selected_doc_id)
-                    is_col = (c == sel_term)
-                    if is_row and is_col:
-                        styler_df.loc[r, c] = "background-color: #facc15; color: #000; font-weight: bold; border: 2px solid #ca8a04;"
-                    elif is_row:
-                        styler_df.loc[r, c] = "background-color: #dbeafe; font-weight: 500;"
-                    elif is_col:
-                        styler_df.loc[r, c] = "background-color: #fef08a;"
-            return styler_df
-
-        st.dataframe(
-            df_display.style.apply(highlight_matrix_cells, axis=None).format(format_str),
-            use_container_width=True,
-            height=320,
-        )
-        st.caption(
-            f"Highlighted: Row = **{st.session_state.selected_doc_id}** (blue), "
-            f"Column = **{sel_term}** (yellow), Intersecting Cell = Gold."
-        )
-
-    # 3. Mathematical Inspector Panel
-    with col_inspector:
-        st.markdown("#### 📐 Mathematical Cell Inspector")
-
-        info = vec_orig.inspect_cell(
-            active_doc.abstract,
-            sel_term,
-            c_orig,
-            z_orig,
-            x_orig,
-            active_doc_idx,
-        )
-
-        st.markdown(
-            f"""
-            <div class="metric-card">
-              <div style="font-weight:600; font-size:1.05rem; margin-bottom:8px;">
-                Cell: [{st.session_state.selected_doc_id}, '{sel_term}']
-              </div>
-              <table style="width:100%; font-size:0.9rem; border-collapse:collapse;">
-                <tr><td><b>Raw Count</b> <code>c(t, d)</code>:</td><td style="text-align:right;"><b>{info['raw_count']}</b></td></tr>
-                <tr><td><b>Relative Frequency</b> <code>f(t, d)</code>:</td><td style="text-align:right;">{info['raw_count']} / {info['doc_token_count']} = <b>{info['relative_freq']:.4f}</b></td></tr>
-                <tr><td colspan="2" style="font-size:0.75rem; color:#64748b; padding-bottom:6px;">Denominator: <i>{info['denominator_name']}</i></td></tr>
-                <tr style="border-top:1px solid #e2e8f0;"><td><b>Corpus Size</b> <code>N</code>:</td><td style="text-align:right;"><b>{info['N']}</b> documents</td></tr>
-                <tr><td><b>Document Frequency</b> <code>DF(t)</code>:</td><td style="text-align:right;"><b>{info['DF']}</b> documents</td></tr>
-                <tr style="border-top:1px solid #e2e8f0;"><td><b>Smoothed IDF</b> <code>idf(t)</code>:</td><td style="text-align:right;"><b>{info['idf']:.4f}</b></td></tr>
-                <tr><td colspan="2" style="font-size:0.75rem; color:#475569; padding-bottom:6px;"><code>{info['idf_formula']}</code></td></tr>
-                <tr style="border-top:1px solid #e2e8f0;"><td><b>Unnormalized TF-IDF</b> <code>z(t, d)</code>:</td><td style="text-align:right;">{info['raw_count']} × {info['idf']:.4f} = <b>{info['unnormalized_tfidf']:.4f}</b></td></tr>
-                <tr><td><b>Document L2 Norm</b> <code>||z(:, d)||₂</code>:</td><td style="text-align:right;"><b>{info['doc_l2_norm']:.4f}</b></td></tr>
-                <tr style="border-top:1px solid #cbd5e1; font-weight:bold; color:#1d4ed8;">
-                  <td><b>L2-Normalized TF-IDF</b> <code>x(t, d)</code>:</td>
-                  <td style="text-align:right;">{info['unnormalized_tfidf']:.4f} / {info['doc_l2_norm']:.4f} = <b>{info['normalized_tfidf']:.4f}</b></td>
-                </tr>
-              </table>
-            </div>
-            """,
-            unsafe_allow_html=True,
-        )
-
-    st.markdown(
-        """
-        <div class="question-box">
-          <b>Pedagogical Observation for Students:</b><br>
-          Notice how the unnormalized TF-IDF weight <code>z(t, d) = c(t, d) × idf(t)</code> scales linearly with document length.
-          L2 normalization divides each row by its Euclidean length <code>||z(:, d)||₂</code>, transforming documents into unit-length vectors on a hypersphere.
-          This ensures cosine similarity later measures conceptual topic direction rather than superficial document verbosity.
-        </div>
-        """,
-        unsafe_allow_html=True,
-    )
+    st.markdown("### 📚 Corpus Summary")
+    st.markdown(f"• **{len(arxiv_papers)} Real arXiv Abstracts**")
+    st.markdown("• **cs.CV:** 16 papers *(Vision & Diffusion)*")
+    st.markdown("• **cs.CL:** 16 papers *(Language & Transformers)*")
+    st.markdown("• **cs.LG:** 16 papers *(Generalization & Theory)*")
+    st.markdown("• **stat.ML:** 16 papers *(Optimization & Bounds)*")
+    st.markdown(f"• **Vocabulary Size:** {len(vec_arxiv.feature_names)} terms")
 
 
 # =============================================================================
-# STEP 2: Project three term coordinates into two dimensions
+# STAGE 1: Feature Representation, 3D PCA & SVD Simulator
 # =============================================================================
-elif st.session_state.step == 2:
+if mode.startswith("1."):
+    st.markdown('<div class="main-title">Stage 1: Feature Representation, 3D PCA & SVD Reconstruction</div>', unsafe_allow_html=True)
     st.markdown(
-        '<div class="sub-header">Dimensionality Reduction: Projecting 3 normalized term coordinates '
-        "('synaptic', 'consolidation', 'decay') onto their top 2 Principal Components (PC1 & PC2).</div>",
+        '<div class="sub-title">Watch raw scientific text transform into weighted sparse vectors. '
+        "Explore 3D geometric variance, covariance heatmaps, and truncated SVD rank-k reconstruction snapping.</div>",
         unsafe_allow_html=True,
     )
 
-    pca_terms = DEFAULT_PCA_TERMS
-    pca_indices = [vec_orig.vocabulary[t] for t in pca_terms]
-    X_3d = x_orig[:, pca_indices]
+    tab_microscope, tab_pca_svd = st.tabs([
+        "🔬 The Token Microscope (Text to Vector Strip)",
+        "🌐 3D PCA & SVD Rank-k Simulator",
+    ])
 
-    pca_result: PCA3DResult = fit_pca_3d(X_3d, pca_terms)
+    # -------------------------------------------------------------------------
+    # TAB 1: The Token Microscope
+    # -------------------------------------------------------------------------
+    with tab_microscope:
+        st.markdown("### Interactive Abstract Vectorizer")
+        st.caption("Select a real arXiv research paper. Words in the abstract light up according to their exact L2-normalized TF-IDF weight.")
 
-    # Stage Selector for Teacher
-    stage_names = [
-        "1. Original 3D Positions",
-        "2. Mean Vector & Centering",
-        "3. PC1–PC2 Subspace Plane",
-        "4. Orthogonal Projections",
-        "5. 2D Projected Scores",
-    ]
-    st.session_state.pca_stage = st.radio(
-        "Interactive Classroom Stage:",
-        options=[1, 2, 3, 4, 5],
-        format_func=lambda s: stage_names[s - 1],
-        index=st.session_state.pca_stage - 1,
-        horizontal=True,
-    )
-
-    col_geom_plot, col_geom_math = st.columns([1.6, 1.4])
-
-    doc_colors = {
-        "DOC-01": "#2563eb",  # Blue
-        "DOC-02": "#16a34a",  # Green
-        "DOC-03": "#9333ea",  # Purple (Target)
-        "DOC-04": "#dc2626",  # Red
-        "DOC-05": "#ea580c",  # Orange
-        "DOC-06": "#0891b2",  # Cyan
-        "DOC-07": "#475569",  # Slate
-    }
-
-    with col_geom_plot:
-        st.markdown(f"#### 🌐 Visualization: Stage {st.session_state.pca_stage}")
-
-        if st.session_state.pca_stage in [1, 2, 3, 4]:
-            fig = go.Figure()
-
-            # 1. Plot original or centered points
-            is_centered_view = (st.session_state.pca_stage >= 2)
-            points = pca_result.X_centered if is_centered_view else pca_result.X_original
-            frame_title = "Centered Coordinate Frame (Xc = X - μ)" if is_centered_view else "Original Coordinate Frame (Normalized TF-IDF)"
-
-            for i, d_id in enumerate(orig_ids):
-                is_selected = (d_id == st.session_state.selected_doc_id)
-                pt = points[i]
-                fig.add_trace(
-                    go.Scatter3d(
-                        x=[pt[0]],
-                        y=[pt[1]],
-                        z=[pt[2]],
-                        mode="markers+text",
-                        marker=dict(
-                            size=12 if is_selected else 8,
-                            color=doc_colors[d_id],
-                            symbol="circle",
-                            line=dict(color="#000" if is_selected else "#fff", width=3 if is_selected else 1),
-                        ),
-                        text=[f"<b>{d_id}</b>" if is_selected else d_id],
-                        textposition="top center",
-                        name=f"{d_id} ({doc_id_to_doc[d_id].category})",
-                    )
-                )
-
-            # Stage 2+: Mean Vector
-            if st.session_state.pca_stage == 2:
-                # Mark origin in centered frame
-                fig.add_trace(
-                    go.Scatter3d(
-                        x=[0], y=[0], z=[0],
-                        mode="markers+text",
-                        marker=dict(size=10, color="#f59e0b", symbol="diamond"),
-                        text=["Origin (Mean μ)"],
-                        textposition="bottom center",
-                        name="Centered Mean μ",
-                    )
-                )
-
-            # Stage 3 & 4: Subspace plane and PC1/PC2 vectors
-            if st.session_state.pca_stage in [3, 4]:
-                # Draw PC1 and PC2 direction vectors from origin
-                v1 = pca_result.eigenvectors[:, 0] * 0.25
-                v2 = pca_result.eigenvectors[:, 1] * 0.25
-
-                fig.add_trace(
-                    go.Scatter3d(
-                        x=[0, v1[0]], y=[0, v1[1]], z=[0, v1[2]],
-                        mode="lines+text",
-                        line=dict(color="#10b981", width=6),
-                        text=["", f"PC1 (52.4%)"],
-                        name="PC1 Vector",
-                    )
-                )
-                fig.add_trace(
-                    go.Scatter3d(
-                        x=[0, v2[0]], y=[0, v2[1]], z=[0, v2[2]],
-                        mode="lines+text",
-                        line=dict(color="#6366f1", width=6),
-                        text=["", f"PC2 (42.8%)"],
-                        name="PC2 Vector",
-                    )
-                )
-
-                # Plane mesh grid spanning [-0.25, 0.25]
-                grid_u = np.linspace(-0.28, 0.28, 11)
-                grid_v = np.linspace(-0.28, 0.28, 11)
-                U, V_mesh = np.meshgrid(grid_u, grid_v)
-                v1_full = pca_result.eigenvectors[:, 0]
-                v2_full = pca_result.eigenvectors[:, 1]
-                plane_x = U * v1_full[0] + V_mesh * v2_full[0]
-                plane_y = U * v1_full[1] + V_mesh * v2_full[1]
-                plane_z = U * v1_full[2] + V_mesh * v2_full[2]
-
-                fig.add_trace(
-                    go.Surface(
-                        x=plane_x, y=plane_y, z=plane_z,
-                        opacity=0.35,
-                        colorscale=[[0, "#93c5fd"], [1, "#c7d2fe"]],
-                        showscale=False,
-                        name="PC1-PC2 Subspace Plane",
-                    )
-                )
-
-            # Stage 4: Orthogonal Projection Lines
-            if st.session_state.pca_stage == 4:
-                # In centered frame, projected point is scores @ V2^T
-                proj_centered = pca_result.scores_2d @ pca_result.eigenvectors[:, :2].T
-                for i, d_id in enumerate(orig_ids):
-                    is_selected = (d_id == st.session_state.selected_doc_id)
-                    pt_orig = pca_result.X_centered[i]
-                    pt_proj = proj_centered[i]
-
-                    # Line connecting 3D point to projected point
-                    fig.add_trace(
-                        go.Scatter3d(
-                            x=[pt_orig[0], pt_proj[0]],
-                            y=[pt_orig[1], pt_proj[1]],
-                            z=[pt_orig[2], pt_proj[2]],
-                            mode="lines",
-                            line=dict(
-                                color="#d97706" if is_selected else "#94a3b8",
-                                width=7 if is_selected else 2,
-                                dash="solid" if is_selected else "dash",
-                            ),
-                            showlegend=False,
-                        )
-                    )
-                    # Marker at projected point on plane
-                    fig.add_trace(
-                        go.Scatter3d(
-                            x=[pt_proj[0]],
-                            y=[pt_proj[1]],
-                            z=[pt_proj[2]],
-                            mode="markers",
-                            marker=dict(
-                                size=10 if is_selected else 5,
-                                color="#f59e0b" if is_selected else doc_colors[d_id],
-                                symbol="cross",
-                            ),
-                            showlegend=False,
-                        )
-                    )
-
-            # Layout with stable ranges
-            r_limit = 0.42 if is_centered_view else 0.45
-            axis_min = -r_limit if is_centered_view else 0.0
-            axis_max = r_limit if is_centered_view else 0.45
-            fig.update_layout(
-                title=frame_title,
-                scene=dict(
-                    xaxis=dict(title=f"'{pca_terms[0]}'", range=[axis_min, axis_max]),
-                    yaxis=dict(title=f"'{pca_terms[1]}'", range=[axis_min, axis_max]),
-                    zaxis=dict(title=f"'{pca_terms[2]}'", range=[axis_min, axis_max]),
-                    camera=dict(eye=dict(x=1.6, y=1.6, z=1.2)),
-                ),
-                margin=dict(l=0, r=0, b=0, t=30),
-                height=480,
+        col_sel_paper, col_sel_term = st.columns([2.5, 1.5])
+        with col_sel_paper:
+            selected_paper_id = st.selectbox(
+                "Select Research Paper:",
+                options=[p.id for p in arxiv_papers],
+                format_func=lambda pid: f"[{arxiv_id_to_paper[pid].category}] {arxiv_id_to_paper[pid].title} ({arxiv_id_to_paper[pid].authors.split(',')[0]} et al., {arxiv_id_to_paper[pid].year})",
             )
-            st.plotly_chart(fig, use_container_width=True)
+        paper = arxiv_id_to_paper[selected_paper_id]
+        paper_idx = [p.id for p in arxiv_papers].index(selected_paper_id)
 
-        else:
-            # Stage 5: 2D Projected Scores
-            fig_2d = go.Figure()
-            for i, d_id in enumerate(orig_ids):
-                is_selected = (d_id == st.session_state.selected_doc_id)
-                sc = pca_result.scores_2d[i]
-                fig_2d.add_trace(
-                    go.Scatter(
-                        x=[sc[0]],
-                        y=[sc[1]],
-                        mode="markers+text",
-                        marker=dict(
-                            size=16 if is_selected else 10,
-                            color=doc_colors[d_id],
-                            line=dict(color="#000" if is_selected else "#fff", width=2),
-                        ),
-                        text=[f"<b>{d_id}</b>" if is_selected else d_id],
-                        textposition="top right",
-                        name=f"{d_id}: {doc_id_to_doc[d_id].title[:25]}",
-                    )
-                )
+        # Get top words in this document by TF-IDF
+        doc_weights = x_arxiv[paper_idx]
+        top_word_indices = np.argsort(doc_weights)[::-1][:15]
+        top_terms = [vec_arxiv.feature_names[i] for i in top_word_indices if doc_weights[i] > 0]
 
-            fig_2d.update_layout(
-                title="2D Projected Scores on PC1 & PC2 (scores = Xc @ V2)",
-                xaxis=dict(
-                    title=f"PC1 (Explained Variance: {pca_result.explained_variance_ratio[0]*100:.2f}%)",
-                    zeroline=True,
-                    zerolinecolor="#cbd5e1",
-                ),
-                yaxis=dict(
-                    title=f"PC2 (Explained Variance: {pca_result.explained_variance_ratio[1]*100:.2f}%)",
-                    zeroline=True,
-                    zerolinecolor="#cbd5e1",
-                ),
-                height=480,
-                margin=dict(l=20, r=20, b=20, t=40),
+        with col_sel_term:
+            inspect_term = st.selectbox(
+                "Inspect Term Derivation:",
+                options=top_terms if top_terms else vec_arxiv.feature_names[:10],
             )
-            st.plotly_chart(fig_2d, use_container_width=True)
 
-    with col_geom_math:
-        st.markdown("#### 📐 Mathematical Derivation & Values")
+        col_text_view, col_math_view = st.columns([1.5, 1.5])
 
-        st.latex(r"X_c = X - \mu, \quad \Sigma = \frac{X_c^T X_c}{n - 1}")
-        st.latex(r"\text{scores} = X_c V_2, \quad \tilde{X} = \text{scores} V_2^T + \mu")
+        with col_text_view:
+            st.markdown(f"#### 📄 {paper.title}")
+            cat_badge = f'<span class="badge-{paper.category.split(".")[1].lower()}">{paper.category}</span>'
+            st.markdown(f"{cat_badge} &nbsp; <b>{paper.authors}</b> ({paper.year}) &nbsp; <code>{paper.id}</code>", unsafe_allow_html=True)
 
-        st.markdown(
-            f"""
-            <div class="metric-card">
-              <b>1. Mean Vector μ:</b><br>
-              <code>['{pca_terms[0]}', '{pca_terms[1]}', '{pca_terms[2]}'] = [{pca_result.mean_vector[0]:.4f}, {pca_result.mean_vector[1]:.4f}, {pca_result.mean_vector[2]:.4f}]</code><br><br>
-              <b>2. Sample Covariance Matrix Σ (3×3):</b>
-              <pre style="margin:4px 0; font-size:0.8rem;">{np.array2string(pca_result.covariance_matrix, precision=4, suppress_small=True)}</pre>
-              <b>3. Eigenvalues & Explained Variance:</b><br>
-              • λ₁ = <b>{pca_result.eigenvalues[0]:.4f}</b> ({pca_result.explained_variance_ratio[0]*100:.2f}%)<br>
-              • λ₂ = <b>{pca_result.eigenvalues[1]:.4f}</b> ({pca_result.explained_variance_ratio[1]*100:.2f}%)<br>
-              • λ₃ = <b>{pca_result.eigenvalues[2]:.4f}</b> ({pca_result.explained_variance_ratio[2]*100:.2f}%)<br>
-              <i>Cumulative 2D Variance Captured:</i> <b>{(pca_result.explained_variance_ratio[0]+pca_result.explained_variance_ratio[1])*100:.2f}%</b><br><br>
-              <b>4. Eigenvectors (Principal Component Loadings V):</b>
-              <pre style="margin:4px 0; font-size:0.8rem;">{np.array2string(pca_result.eigenvectors, precision=4, suppress_small=True)}</pre>
-              <span style="font-size:0.75rem; color:#64748b;">
-                Jacobi Solver: Converged in {pca_result.jacobi_iterations} sweeps (tol=1e-12). Subspace isotropic: {pca_result.is_degenerate}.
-              </span>
-            </div>
-            """,
-            unsafe_allow_html=True,
-        )
+            # Highlight words in abstract according to TF-IDF weight
+            words = re.findall(r"\b\w+\b|[^\w\s]|\s+", paper.abstract)
+            annotated_html = []
+            max_w = float(np.max(doc_weights)) if np.max(doc_weights) > 0 else 1.0
 
-        # Selected document inspector
-        active_idx = orig_ids.index(st.session_state.selected_doc_id)
-        pt_orig = pca_result.X_original[active_idx]
-        pt_cent = pca_result.X_centered[active_idx]
-        pt_scores = pca_result.scores_2d[active_idx]
-        pt_recon = pca_result.projected_3d[active_idx]
-        dist_residual = np.linalg.norm(pca_result.residuals_3d[active_idx])
-
-        st.markdown(
-            f"""
-            <div class="metric-card" style="border-left:4px solid #2563eb;">
-              <b>Focus Document: {st.session_state.selected_doc_id}</b><br>
-              • Original coordinates: <code>[{pt_orig[0]:.4f}, {pt_orig[1]:.4f}, {pt_orig[2]:.4f}]</code><br>
-              • Centered coordinates: <code>[{pt_cent[0]:.4f}, {pt_cent[1]:.4f}, {pt_cent[2]:.4f}]</code><br>
-              • 2D Projected Scores (PC1, PC2): <code>[{pt_scores[0]:.4f}, {pt_scores[1]:.4f}]</code><br>
-              • 3D Reconstructed point: <code>[{pt_recon[0]:.4f}, {pt_recon[1]:.4f}, {pt_recon[2]:.4f}]</code><br>
-              • Orthogonal Residual Distance: <b>{dist_residual:.4f}</b> (distance to 2D plane)
-            </div>
-            """,
-            unsafe_allow_html=True,
-        )
-
-    st.markdown(
-        """
-        <div class="question-box">
-          <b>Pedagogical Observation for Students:</b><br>
-          Notice that PC1 and PC2 together capture <b>95.22%</b> of the total variance across the 7 papers, meaning
-          the orthogonal residual error (distance from each 3D point to the plane) is remarkably small.
-          The 2D projection preserves almost all geometric relational information between papers.
-        </div>
-        """,
-        unsafe_allow_html=True,
-    )
-
-
-# =============================================================================
-# STEP 3: Rank documents and explain one score
-# =============================================================================
-elif st.session_state.step == 3:
-    st.markdown(
-        '<div class="sub-header">Full-Vector Cosine Retrieval: Ranking literature against a hypothesis claim, '
-        "reconciling exact term contributions, and uncovering semantic vs lexical traps.</div>",
-        unsafe_allow_html=True,
-    )
-
-    # Claim Input Box
-    claim_col1, claim_col2 = st.columns([3.5, 1.0])
-    with claim_col1:
-        user_query = st.text_input(
-            "Hypothesis Claim to Retrieve Evidence:",
-            value=st.session_state.query_input,
-            help="Type any claim or keep the default teaching hypothesis.",
-        )
-        if user_query != st.session_state.query_input:
-            st.session_state.query_input = user_query
-            st.rerun()
-
-    with claim_col2:
-        st.markdown("<div style='height:28px;'></div>", unsafe_allow_html=True)
-        if st.button("Reset Default Claim", use_container_width=True):
-            st.session_state.query_input = DEFAULT_TEACHING_CLAIM
-            st.rerun()
-
-    st.session_state.reveal_annotations = st.checkbox(
-        "👁️ Reveal Fixture Expert Annotation (Compare Lexical Score vs Ground Truth)",
-        value=st.session_state.reveal_annotations,
-    )
-
-    retrieval_engine = EvidenceRetrieval(vec_orig)
-    status, msg, search_results = retrieval_engine.search(
-        st.session_state.query_input,
-        orig_ids,
-        [d.title for d in orig_docs],
-        orig_texts,
-        [d.annotation for d in orig_docs],
-        x_orig,
-        c_orig,
-    )
-
-    if status == QueryStatus.BLANK:
-        st.warning(f"⚠️ {msg}")
-    elif status == QueryStatus.NO_VOCAB_OVERLAP:
-        st.error(f"❌ {msg}")
-        st.info("The vocabulary was fitted on the 7 baseline abstracts. Try terms like 'synaptic', 'consolidation', 'sleep', 'associative', or 'memory'.")
-    else:
-        # Valid retrieval results
-        col_rank_list, col_breakdown = st.columns([1.5, 1.5])
-
-        with col_rank_list:
-            st.markdown("#### 🏆 Ranked Document Candidates (Cosine Similarity)")
-
-            # Render ranked items
-            for res in search_results:
-                is_selected = (res.doc_id == st.session_state.selected_doc_id)
-                badge_color = "#2563eb" if res.score > 0.4 else ("#0284c7" if res.score > 0.2 else "#64748b")
-
-                with st.container():
-                    st.markdown(
-                        f"""
-                        <div style="border: 1px solid {'#2563eb' if is_selected else '#e2e8f0'};
-                                    background-color: {'#eff6ff' if is_selected else '#ffffff'};
-                                    border-radius: 8px; padding: 10px 14px; margin-bottom: 8px;">
-                          <div style="display:flex; justify-content:space-between; align-items:center;">
-                            <span style="font-weight:700; font-size:1.0rem;">
-                              Rank #{res.rank} — {res.doc_id}
-                            </span>
-                            <span style="background-color:{badge_color}; color:#fff; padding:2px 8px; border-radius:12px; font-size:0.85rem; font-weight:600;">
-                              Similarity: {res.score:.4f}
-                            </span>
-                          </div>
-                          <div style="font-size:0.9rem; color:#1e293b; margin:4px 0;">{res.title}</div>
-                        </div>
-                        """,
-                        unsafe_allow_html=True,
-                    )
-                    if st.button(f"Inspect {res.doc_id}", key=f"btn_inspect_{res.doc_id}"):
-                        st.session_state.selected_doc_id = res.doc_id
-                        st.rerun()
-
-        with col_breakdown:
-            st.markdown(f"#### 🔍 Term Contribution Waterfall: {st.session_state.selected_doc_id}")
-
-            # Find selected result
-            selected_res = next((r for r in search_results if r.doc_id == st.session_state.selected_doc_id), search_results[0])
-            sel_doc_obj = doc_id_to_doc[selected_res.doc_id]
-
-            st.markdown(f"**{sel_doc_obj.title}**")
-            st.markdown(f"*{sel_doc_obj.abstract}*")
-
-            # Show annotation if requested
-            if st.session_state.reveal_annotations:
-                if sel_doc_obj.category == "lexical_trap":
-                    st.markdown(
-                        f'<div class="annotation-trap"><b>⚠️ Lexical Trap:</b> {sel_doc_obj.annotation}</div>',
-                        unsafe_allow_html=True,
-                    )
-                elif sel_doc_obj.category == "supporting":
-                    st.markdown(
-                        f'<div class="annotation-support"><b>✅ Ground Truth Support:</b> {sel_doc_obj.annotation}</div>',
-                        unsafe_allow_html=True,
-                    )
+            for w in words:
+                clean_w = w.lower().strip()
+                if clean_w in vec_arxiv.vocabulary:
+                    t_idx = vec_arxiv.vocabulary[clean_w]
+                    weight = doc_weights[t_idx]
+                    if weight > 0:
+                        alpha = min(0.85, 0.15 + 0.7 * (weight / max_w))
+                        is_sel = (clean_w == inspect_term.lower())
+                        border = "2px solid #ca8a04" if is_sel else "none"
+                        bg = "#fef08a" if is_sel else f"rgba(99, 102, 241, {alpha:.2f})"
+                        color = "#000" if is_sel else ("#ffffff" if alpha > 0.5 else "#1e1b4b")
+                        annotated_html.append(
+                            f'<span style="background:{bg}; color:{color}; padding:2px 5px; border-radius:4px; font-weight:600; border:{border}; cursor:pointer;" '
+                            f'title="{clean_w}: weight={weight:.4f}">{w}</span>'
+                        )
+                    else:
+                        annotated_html.append(w)
                 else:
-                    st.markdown(
-                        f'<div class="annotation-comp"><b>ℹ️ Comparison Abstract:</b> {sel_doc_obj.annotation}</div>',
-                        unsafe_allow_html=True,
-                    )
+                    annotated_html.append(w)
+
+            st.markdown(
+                f'<div style="background:#ffffff; border:1px solid #cbd5e1; border-radius:8px; padding:14px; line-height:1.8; margin-top:10px;">'
+                f'{"".join(annotated_html)}</div>',
+                unsafe_allow_html=True,
+            )
+            st.caption("Visual intensity corresponds to relative TF-IDF importance. Clicked term is highlighted in gold.")
+
+        with col_math_view:
+            st.markdown(f"#### 📐 Exact Mathematical Substitution: `{inspect_term}`")
+            cell_info = vec_arxiv.inspect_cell(paper.abstract, inspect_term, c_arxiv, z_arxiv, x_arxiv, paper_idx)
 
             st.markdown(
                 f"""
-                <div style="margin:10px 0; font-size:0.9rem;">
-                  <b>Cosine Similarity Score:</b> <code>{selected_res.score:.4f}</code><br>
-                  <b>Sum of Term Contributions:</b> <code>{selected_res.sum_contributions:.4f}</code>
-                  (Reconciliation Delta: <code>{abs(selected_res.score - selected_res.sum_contributions):.2e}</code>)
+                <div class="math-card">
+                  <div style="font-weight:700; margin-bottom:8px;">1. Term Frequency in Document:</div>
+                  <div class="math-step">
+                    c("{inspect_term}", d) = {cell_info['raw_count']} &nbsp;&nbsp;|&nbsp;&nbsp;
+                    f("{inspect_term}", d) = {cell_info['raw_count']} / {cell_info['doc_token_count']} = {cell_info['relative_freq']:.4f}
+                  </div>
+                  <div style="font-weight:700; margin-top:12px; margin-bottom:8px;">2. Smoothed Inverse Document Frequency (IDF):</div>
+                  <div class="math-step">
+                    IDF("{inspect_term}") = ln((1 + N) / (1 + DF)) + 1<br>
+                    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;= ln((1 + {cell_info['N']}) / (1 + {cell_info['DF']})) + 1<br>
+                    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;= ln({cell_info['N']+1}/{cell_info['DF']+1}) + 1 = <b>{cell_info['idf']:.4f}</b>
+                  </div>
+                  <div style="font-weight:700; margin-top:12px; margin-bottom:8px;">3. Unnormalized Product z(t, d):</div>
+                  <div class="math-step">
+                    z("{inspect_term}", d) = c(t, d) × IDF(t) = {cell_info['raw_count']} × {cell_info['idf']:.4f} = <b>{cell_info['unnormalized_tfidf']:.4f}</b>
+                  </div>
+                  <div style="font-weight:700; margin-top:12px; margin-bottom:8px;">4. Euclidean (L2) Normalization:</div>
+                  <div class="math-step" style="border-left:4px solid #6366f1;">
+                    x("{inspect_term}", d) = z(t, d) / ||z(:, d)||₂<br>
+                    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;= {cell_info['unnormalized_tfidf']:.4f} / {cell_info['doc_l2_norm']:.4f} = <b>{cell_info['normalized_tfidf']:.4f}</b>
+                  </div>
                 </div>
                 """,
                 unsafe_allow_html=True,
             )
 
-            # Waterfall or horizontal bar chart of term contributions
-            if selected_res.matching_terms:
-                t_terms = [t.term for t in selected_res.matching_terms]
-                t_contribs = [t.contribution for t in selected_res.matching_terms]
+        # 2D Heatmap / Vector Strip
+        st.markdown("#### 🌡️ Top Informative Features (Vector Strip Heatmap)")
+        top_terms_display = top_terms[:12] if top_terms else vec_arxiv.feature_names[:12]
+        term_sub_indices = [vec_arxiv.vocabulary[t] for t in top_terms_display]
 
-                fig_contrib = px.bar(
-                    x=t_contribs[::-1],
-                    y=t_terms[::-1],
-                    orientation="h",
-                    labels={"x": "Contribution: q_norm(t) × d_norm(t)", "y": "Term"},
-                    title=f"Per-Term Cosine Contribution Breakdown for {selected_res.doc_id}",
-                    color=t_contribs[::-1],
-                    color_continuous_scale="Blues",
+        # Get papers in same category for clean heatmap
+        cat_paper_indices = [i for i, p in enumerate(arxiv_papers) if p.category == paper.category][:8]
+        cat_paper_ids = [arxiv_papers[i].id.split(":")[1] for i in cat_paper_indices]
+        heatmap_matrix = x_arxiv[np.ix_(cat_paper_indices, term_sub_indices)]
+
+        fig_heat = px.imshow(
+            heatmap_matrix,
+            labels=dict(x="Vocabulary Term", y="arXiv Paper ID", color="TF-IDF Weight"),
+            x=top_terms_display,
+            y=cat_paper_ids,
+            color_continuous_scale="Purples",
+            aspect="auto",
+            title=f"L2-Normalized Feature Coordinates across {paper.category} Literature",
+        )
+        fig_heat.update_layout(height=280, margin=dict(l=40, r=20, b=30, t=40))
+        st.plotly_chart(fig_heat, use_container_width=True)
+
+    # -------------------------------------------------------------------------
+    # TAB 2: 3D PCA & SVD Rank-k Simulator
+    # -------------------------------------------------------------------------
+    with tab_pca_svd:
+        st.markdown("### 3D Geometric PCA & Truncated SVD Reconstruction")
+        st.caption("Inspect the 64 arXiv papers as 3D coordinate vectors across distinctive domain keywords. Observe covariance, principal axes, and rank-k SVD reconstruction.")
+
+        col_terms, col_svd_k = st.columns([2.5, 1.5])
+        with col_terms:
+            triplet_presets = {
+                "Vision vs NLP vs Optimization: ['image', 'language', 'optimization']": ["image", "language", "optimization"],
+                "Deep Learning Architectures: ['convolutional', 'transformer', 'gradient']": ["convolutional", "transformer", "gradient"],
+                "Foundations: ['visual', 'translation', 'convex']": ["visual", "translation", "convex"],
+            }
+            chosen_preset = st.selectbox("Feature Coordinate Triplet Preset:", options=list(triplet_presets.keys()))
+            selected_pca_terms = triplet_presets[chosen_preset]
+
+        with col_svd_k:
+            rank_k = st.slider("Truncated SVD Rank k (Reconstruction Simulator):", min_value=1, max_value=3, value=2)
+
+        pca_term_indices = [vec_arxiv.vocabulary.get(t, 0) for t in selected_pca_terms]
+        X_3d_arxiv = x_arxiv[:, pca_term_indices]
+
+        pca_3d_res = fit_pca_3d(X_3d_arxiv, selected_pca_terms)
+        svd_res = compute_svd_rank_k(X_3d_arxiv, k=rank_k)
+
+        col_3d_canvas, col_svd_metrics = st.columns([1.7, 1.3])
+
+        with col_3d_canvas:
+            fig_3d = go.Figure()
+
+            # Render SVD reconstructed vs original coordinates
+            # When rank_k < 3, show reconstructed points with snapping lines
+            pts_display = svd_res.X_reconstructed if rank_k < 3 else X_3d_arxiv
+
+            for cat in ["cs.CV", "cs.CL", "cs.LG", "stat.ML"]:
+                mask = np.array([p.category == cat for p in arxiv_papers])
+                pts_cat = pts_display[mask]
+                ids_cat = [p.id for i, p in enumerate(arxiv_papers) if mask[i]]
+                titles_cat = [p.title for i, p in enumerate(arxiv_papers) if mask[i]]
+
+                fig_3d.add_trace(
+                    go.Scatter3d(
+                        x=pts_cat[:, 0],
+                        y=pts_cat[:, 1],
+                        z=pts_cat[:, 2],
+                        mode="markers",
+                        marker=dict(size=7, color=CATEGORY_COLORS[cat], symbol="circle"),
+                        text=[f"<b>{pid}</b>: {t}" for pid, t in zip(ids_cat, titles_cat)],
+                        name=f"{cat} ({np.sum(mask)} papers)",
+                    )
                 )
-                fig_contrib.update_layout(height=260, margin=dict(l=20, r=20, b=20, t=35), showlegend=False)
-                st.plotly_chart(fig_contrib, use_container_width=True)
 
-                # Detailed contribution table
-                df_tc = pd.DataFrame([
-                    {
-                        "Term": tc.term,
-                        "Query Count": tc.query_raw_count,
-                        "Query Weight q̂": f"{tc.query_normalized_weight:.4f}",
-                        "Doc Count": tc.doc_raw_count,
-                        "Doc Weight d̂": f"{tc.doc_normalized_weight:.4f}",
-                        "Product (Contribution)": f"{tc.contribution:.4f}",
-                    }
-                    for tc in selected_res.matching_terms
-                ])
-                st.dataframe(df_tc, use_container_width=True, hide_index=True)
-            else:
-                st.info("No matching vocabulary terms between this document and the query claim.")
+            # Draw Centroid Mean Vector μ
+            mu = pca_3d_res.mean_vector
+            fig_3d.add_trace(
+                go.Scatter3d(
+                    x=[mu[0]], y=[mu[1]], z=[mu[2]],
+                    mode="markers+text",
+                    marker=dict(size=11, color="#f59e0b", symbol="diamond"),
+                    text=["Centroid μ"],
+                    name="Global Mean μ",
+                )
+            )
+
+            # Draw PC1 and PC2 axes from mean
+            v1 = pca_3d_res.eigenvectors[:, 0] * 0.2
+            v2 = pca_3d_res.eigenvectors[:, 1] * 0.2
+            fig_3d.add_trace(
+                go.Scatter3d(
+                    x=[mu[0], mu[0] + v1[0]],
+                    y=[mu[1], mu[1] + v1[1]],
+                    z=[mu[2], mu[2] + v1[2]],
+                    mode="lines+text",
+                    line=dict(color="#10b981", width=6),
+                    text=["", "PC1"],
+                    name="PC1 Axis",
+                )
+            )
+            fig_3d.add_trace(
+                go.Scatter3d(
+                    x=[mu[0], mu[0] + v2[0]],
+                    y=[mu[1], mu[1] + v2[1]],
+                    z=[mu[2], mu[2] + v2[2]],
+                    mode="lines+text",
+                    line=dict(color="#6366f1", width=6),
+                    text=["", "PC2"],
+                    name="PC2 Axis",
+                )
+            )
+
+            fig_3d.update_layout(
+                title=f"3D Space: {'Rank-' + str(rank_k) + ' SVD Truncated State' if rank_k < 3 else 'Original Coordinates'}",
+                scene=dict(
+                    xaxis=dict(title=f"'{selected_pca_terms[0]}'"),
+                    yaxis=dict(title=f"'{selected_pca_terms[1]}'"),
+                    zaxis=dict(title=f"'{selected_pca_terms[2]}'"),
+                ),
+                height=480,
+                margin=dict(l=0, r=0, b=0, t=30),
+            )
+            st.plotly_chart(fig_3d, use_container_width=True)
+
+        with col_svd_metrics:
+            st.markdown("#### 📐 SVD & Covariance Heatmap")
+
+            # Covariance matrix heatmap
+            fig_cov = px.imshow(
+                pca_3d_res.covariance_matrix,
+                labels=dict(x="Feature", y="Feature", color="Covariance"),
+                x=selected_pca_terms,
+                y=selected_pca_terms,
+                color_continuous_scale="Blues",
+                title="Sample Covariance Matrix Σ",
+            )
+            fig_cov.update_layout(height=220, margin=dict(l=30, r=20, b=20, t=35))
+            st.plotly_chart(fig_cov, use_container_width=True)
+
+            st.markdown(
+                f"""
+                <div class="math-card">
+                  <div style="font-weight:700; margin-bottom:6px;">SVD Decomposition: <code>X = U Σ Vᵀ</code></div>
+                  • Singular Values: <code>σ = [{svd_res.singular_values[0]:.4f}, {svd_res.singular_values[1]:.4f}, {svd_res.singular_values[2]:.4f}]</code><br>
+                  • Selected Rank: <b>k = {rank_k}</b><br>
+                  • Energy (Variance) Captured: <b>{svd_res.energy_captured*100:.2f}%</b><br>
+                  • Frobenius Reconstruction Error: <code>||X - X̂_k||_F = {svd_res.frobenius_error:.4f}</code><br>
+                  • Relative Residual Error: <b>{svd_res.relative_error*100:.2f}%</b>
+                </div>
+                """,
+                unsafe_allow_html=True,
+            )
 
         st.markdown(
-            """
-            <div class="question-box">
-              <b>Pedagogical Observation for Students:</b><br>
-              Look at <b>DOC-04</b> ("Awake Synaptic Consolidation During Novelty Exploration Destabilizes Memory Traces").
-              It achieves a very high cosine similarity score (Rank #3 or #4) purely because it matches multiple query words
-              ('synaptic', 'consolidation', 'during', 'stabilizes', 'associative', 'memory').
-              Yet its actual finding directly contradicts the hypothesis claim!
-              This illustrates why lexical similarity is not semantic truth.
+            f"""
+            <div class="takeaway-box">
+              <b>3Blue1Brown Geometric Insight:</b><br>
+              When <b>k = 1</b>, every paper vector is collapsed onto the 1D line spanned by the first right singular vector <code>v₁</code>.
+              When <b>k = 2</b>, papers snap onto the optimal 2D hyperplane, capturing <b>{svd_res.energy_captured*100:.2f}%</b> of the total matrix energy.
+              At <b>k = 3</b>, the full rank is restored, reducing the Frobenius reconstruction error to <b>0.0000</b>.
             </div>
             """,
             unsafe_allow_html=True,
@@ -943,210 +459,469 @@ elif st.session_state.step == 3:
 
 
 # =============================================================================
-# STEP 4: Evidence Under Shift
+# STAGE 2: Supervised Linear Boundaries (LDA & SVM)
 # =============================================================================
-elif st.session_state.step == 4:
+elif mode.startswith("2."):
+    st.markdown('<div class="main-title">Stage 2: Supervised Linear Boundaries & Geometry</div>', unsafe_allow_html=True)
     st.markdown(
-        '<div class="sub-header">Evidence Under Shift: Can the same paper fall out of the shortlist '
+        '<div class="sub-title">Explore how known class labels transform dimensionality reduction from variance maximization (PCA) '
+        "to class separability (LDA), and interact with Support Vector Machine (SVM) margin gutters and regularizer C.</div>",
+        unsafe_allow_html=True,
+    )
+
+    tab_lda, tab_svm = st.tabs([
+        "🔬 Linear Discriminant Analysis (S_W & S_B Scatter Simulator)",
+        "⚔️ Support Vector Machine (SVM) Margin & Hyperplane Explorer",
+    ])
+
+    # -------------------------------------------------------------------------
+    # TAB 1: Linear Discriminant Analysis
+    # -------------------------------------------------------------------------
+    with tab_lda:
+        st.markdown("### Multiclass Scatter Matrices: $S_W$ vs $S_B$")
+        st.caption("LDA maximizes between-class scatter while minimizing within-class variance: J(w) = (wᵀ S_B w) / (wᵀ S_W w).")
+
+        # Compute LDA on full 3D features
+        lda_terms = ["image", "language", "optimization"]
+        idx_lda = [vec_arxiv.vocabulary[t] for t in lda_terms]
+        X_lda = x_arxiv[:, idx_lda]
+        lda_res: LDAResult = LDASimulator.fit(X_lda, arxiv_categories)
+
+        col_sw_heat, col_sb_heat = st.columns(2)
+        with col_sw_heat:
+            fig_sw = px.imshow(
+                lda_res.S_W,
+                x=lda_terms,
+                y=lda_terms,
+                color_continuous_scale="Reds",
+                title="Within-Class Scatter Matrix S_W = ∑_c ∑ (x - μ_c)(x - μ_c)ᵀ",
+            )
+            fig_sw.update_layout(height=260, margin=dict(l=30, r=20, b=20, t=35))
+            st.plotly_chart(fig_sw, use_container_width=True)
+
+        with col_sb_heat:
+            fig_sb = px.imshow(
+                lda_res.S_B,
+                x=lda_terms,
+                y=lda_terms,
+                color_continuous_scale="Greens",
+                title="Between-Class Scatter Matrix S_B = ∑_c N_c (μ_c - μ)(μ_c - μ)ᵀ",
+            )
+            fig_sb.update_layout(height=260, margin=dict(l=30, r=20, b=20, t=35))
+            st.plotly_chart(fig_sb, use_container_width=True)
+
+        # 2D Projection Comparison: PCA vs LDA
+        col_proj_lda, col_proj_pca = st.columns(2)
+
+        with col_proj_lda:
+            fig_lda_2d = go.Figure()
+            for cat in ["cs.CV", "cs.CL", "cs.LG", "stat.ML"]:
+                mask = np.array([p.category == cat for p in arxiv_papers])
+                pts = lda_res.projected_2d[mask]
+                fig_lda_2d.add_trace(
+                    go.Scatter(
+                        x=pts[:, 0],
+                        y=pts[:, 1],
+                        mode="markers",
+                        marker=dict(size=9, color=CATEGORY_COLORS[cat]),
+                        name=cat,
+                    )
+                )
+            fig_lda_2d.update_layout(
+                title=f"LDA Projection: Maximum Class Separability (λ₁={lda_res.eigenvalues[0]:.2f}, λ₂={lda_res.eigenvalues[1]:.2f})",
+                xaxis_title="Discriminant Axis 1 (w₁)",
+                yaxis_title="Discriminant Axis 2 (w₂)",
+                height=380,
+                margin=dict(l=30, r=20, b=30, t=40),
+            )
+            st.plotly_chart(fig_lda_2d, use_container_width=True)
+
+        with col_proj_pca:
+            pca_res_2d = fit_pca_3d(X_lda, lda_terms)
+            fig_pca_comp = go.Figure()
+            for cat in ["cs.CV", "cs.CL", "cs.LG", "stat.ML"]:
+                mask = np.array([p.category == cat for p in arxiv_papers])
+                pts = pca_res_2d.scores_2d[mask]
+                fig_pca_comp.add_trace(
+                    go.Scatter(
+                        x=pts[:, 0],
+                        y=pts[:, 1],
+                        mode="markers",
+                        marker=dict(size=9, color=CATEGORY_COLORS[cat]),
+                        name=cat,
+                    )
+                )
+            fig_pca_comp.update_layout(
+                title=f"PCA Projection: Total Variance Maximization (Unsupervised)",
+                xaxis_title="Principal Component 1",
+                yaxis_title="Principal Component 2",
+                height=380,
+                margin=dict(l=30, r=20, b=30, t=40),
+            )
+            st.plotly_chart(fig_pca_comp, use_container_width=True)
+
+        st.markdown(
+            """
+            <div class="takeaway-box">
+              <b>Core Mathematical Distinction (PCA vs LDA):</b><br>
+              Notice how PCA projects along the direction of greatest total spread without regard for class labels, leading to overlapping clusters.
+              In contrast, <b>LDA solves (S_W⁻¹ S_B) w = λ w</b>, explicitly contracting within-class spread (S_W) while expanding the distance
+              between category centroids (S_B), producing tight, cleanly separated clusters!
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
+
+    # -------------------------------------------------------------------------
+    # TAB 2: Support Vector Machine (SVM) Margin Explorer
+    # -------------------------------------------------------------------------
+    with tab_svm:
+        st.markdown("### The SVM Margin & Support Vector Simulator")
+        st.caption("Classify two research domains in 2D space. Adjust regularization penalty C to watch the margin gutters expand or contract live.")
+
+        col_svm_pair, col_svm_c = st.columns([2.0, 2.0])
+        with col_svm_pair:
+            pair_choice = st.selectbox(
+                "Binary Classification Task:",
+                options=[
+                    ("cs.CV", "cs.CL", "Computer Vision vs Computation & Language"),
+                    ("cs.CV", "stat.ML", "Computer Vision vs Statistical Optimization"),
+                    ("cs.CL", "stat.ML", "Language Models vs Statistical Optimization"),
+                ],
+                format_func=lambda opt: f"{opt[0]} vs {opt[1]} ({opt[2]})",
+            )
+            cat_pos, cat_neg, pair_desc = pair_choice
+
+        with col_svm_c:
+            c_val = st.slider("Regularization Penalty C (Soft vs Hard Margin):", min_value=0.01, max_value=20.0, value=1.0, step=0.1)
+
+        # Filter papers to the selected pair
+        mask_binary = np.array([p.category in [cat_pos, cat_neg] for p in arxiv_papers])
+        sub_papers = [p for i, p in enumerate(arxiv_papers) if mask_binary[i]]
+        X_sub_2d = lda_res.projected_2d[mask_binary]
+        y_binary = np.array([1 if p.category == cat_pos else -1 for p in sub_papers])
+
+        # Fit SVM
+        svm_res: SVMResult = SVMSimulator.fit(X_sub_2d, y_binary, C=c_val)
+
+        col_svm_plot, col_svm_inspect = st.columns([1.8, 1.2])
+
+        with col_svm_plot:
+            fig_svm = go.Figure()
+
+            # Plot Gutters and Hyperplane
+            fig_svm.add_trace(
+                go.Scatter(
+                    x=svm_res.line_x,
+                    y=svm_res.line_boundary,
+                    mode="lines",
+                    line=dict(color="#0f172a", width=3),
+                    name="Hyperplane: wᵀ x + b = 0",
+                )
+            )
+            fig_svm.add_trace(
+                go.Scatter(
+                    x=svm_res.line_x,
+                    y=svm_res.line_gutter_pos,
+                    mode="lines",
+                    line=dict(color="#10b981", width=2, dash="dash"),
+                    name="Gutter: wᵀ x + b = +1",
+                )
+            )
+            fig_svm.add_trace(
+                go.Scatter(
+                    x=svm_res.line_x,
+                    y=svm_res.line_gutter_neg,
+                    mode="lines",
+                    line=dict(color="#6366f1", width=2, dash="dash"),
+                    name="Gutter: wᵀ x + b = -1",
+                )
+            )
+
+            # Plot Data Points
+            for cat, label_val, color in [(cat_pos, 1, CATEGORY_COLORS[cat_pos]), (cat_neg, -1, CATEGORY_COLORS[cat_neg])]:
+                cat_mask = (y_binary == label_val)
+                pts = X_sub_2d[cat_mask]
+                paper_ids = [sub_papers[i].id for i in range(len(sub_papers)) if cat_mask[i]]
+                paper_titles = [sub_papers[i].title for i in range(len(sub_papers)) if cat_mask[i]]
+
+                fig_svm.add_trace(
+                    go.Scatter(
+                        x=pts[:, 0],
+                        y=pts[:, 1],
+                        mode="markers",
+                        marker=dict(size=9, color=color),
+                        text=[f"<b>{pid}</b>: {t}" for pid, t in zip(paper_ids, paper_titles)],
+                        name=f"{cat} ({np.sum(cat_mask)} papers)",
+                    )
+                )
+
+            # Highlight Support Vectors with Glowing Rings
+            sv_pts = X_sub_2d[svm_res.support_vector_indices]
+            fig_svm.add_trace(
+                go.Scatter(
+                    x=sv_pts[:, 0],
+                    y=sv_pts[:, 1],
+                    mode="markers",
+                    marker=dict(
+                        size=18,
+                        color="rgba(0,0,0,0)",
+                        line=dict(color="#f59e0b", width=3),
+                    ),
+                    name=f"Support Vectors ({len(svm_res.support_vector_indices)})",
+                )
+            )
+
+            # Limit plot range to avoid infinite lines
+            y_pts_all = X_sub_2d[:, 1]
+            y_span = np.max(y_pts_all) - np.min(y_pts_all)
+            fig_svm.update_layout(
+                title=f"SVM Margin (C={c_val:.2f}): Width γ = {svm_res.margin_width:.4f} | Accuracy = {svm_res.accuracy*100:.1f}%",
+                xaxis_title="Discriminant Feature 1",
+                yaxis_title="Discriminant Feature 2",
+                yaxis=dict(range=[np.min(y_pts_all) - 0.4 * y_span, np.max(y_pts_all) + 0.4 * y_span]),
+                height=460,
+                margin=dict(l=30, r=20, b=30, t=40),
+            )
+            st.plotly_chart(fig_svm, use_container_width=True)
+
+        with col_svm_inspect:
+            st.markdown("#### 📐 Margin Equations & Metrics")
+            st.markdown(
+                f"""
+                <div class="math-card">
+                  <div style="font-weight:700; margin-bottom:6px;">1. Hyperplane Parameters:</div>
+                  • Normal Vector <code>w = [{svm_res.w[0]:.4f}, {svm_res.w[1]:.4f}]</code><br>
+                  • Euclidean Norm <code>||w||₂ = {np.linalg.norm(svm_res.w):.4f}</code><br>
+                  • Bias Term <code>b = {svm_res.b:.4f}</code><br><br>
+                  <div style="font-weight:700; margin-bottom:6px;">2. Margin Width:</div>
+                  <div class="math-step">
+                    γ = 2 / ||w||₂ = 2 / {np.linalg.norm(svm_res.w):.4f} = <b>{svm_res.margin_width:.4f}</b>
+                  </div>
+                  <div style="font-weight:700; margin-top:10px; margin-bottom:6px;">3. Regularization Tradeoff:</div>
+                  • Penalty <b>C = {c_val}</b><br>
+                  • Support Vectors Identified: <b>{len(svm_res.support_vector_indices)} of {len(sub_papers)}</b><br>
+                  • Classification Accuracy: <b>{svm_res.accuracy*100:.1f}%</b>
+                </div>
+                """,
+                unsafe_allow_html=True,
+            )
+
+            # Point Inspector
+            st.markdown("#### 🔍 Individual Point Inspector")
+            sel_pt_idx = st.selectbox(
+                "Select Paper to Inspect Margin & Slack:",
+                options=list(range(len(sub_papers))),
+                format_func=lambda idx: f"{sub_papers[idx].id}: {sub_papers[idx].title[:35]}...",
+            )
+            f_margin = svm_res.sample_margins[sel_pt_idx]
+            slack = svm_res.sample_slacks[sel_pt_idx]
+            is_sv = sel_pt_idx in svm_res.support_vector_indices
+
+            st.markdown(
+                f"""
+                <div class="math-card" style="border-left:4px solid {'#f59e0b' if is_sv else '#94a3b8'};">
+                  <b>Paper: {sub_papers[sel_pt_idx].id}</b> ({sub_papers[sel_pt_idx].category})<br>
+                  • Ground Truth Label: <code>y = {y_binary[sel_pt_idx]:+d}</code><br>
+                  • Functional Margin: <code>y(wᵀx + b) = {f_margin:+.4f}</code><br>
+                  • Slack Variable: <code>ξ = {slack:.4f}</code><br>
+                  • Status: <b>{'★ SUPPORT VECTOR' if is_sv else 'Non-critical Point'}</b>
+                </div>
+                """,
+                unsafe_allow_html=True,
+            )
+
+        st.markdown(
+            """
+            <div class="takeaway-box">
+              <b>Bret Victor Explorable Insight:</b><br>
+              Drag the <b>C slider</b>! As C increases (approaching a hard margin), the optimizer heavily penalizes margin violations,
+              forcing the margin width <code>γ = 2/||w||</code> to narrow and reducing support vectors to the critical boundary boundary points.
+              As C decreases (soft margin), the margin expands, allowing more points to enter the gutter to maximize generalization robustness.
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
+
+
+# =============================================================================
+# STAGE 3: Evidence Retrieval & Shift Laboratory (Preserving Lesson 1)
+# =============================================================================
+elif mode.startswith("3."):
+    st.markdown('<div class="main-title">Stage 3: Evidence Retrieval & Statistical Shift Laboratory</div>', unsafe_allow_html=True)
+    st.markdown(
+        '<div class="sub-title">The core Lesson 1 pedagogical paradox: Can the same paper fall out of the shortlist '
         "when its own text and candidate eligibility remain fixed?</div>",
         unsafe_allow_html=True,
     )
 
-    # Preset & Control Panel
-    ctrl_col1, ctrl_col2, ctrl_col3 = st.columns([1.5, 1.2, 1.2])
+    fixture_all = get_teaching_fixture()
+    fixture_orig = get_original_corpus()
+    fixture_incoming = get_incoming_batch()
 
-    with ctrl_col1:
-        if st.button("⭐ Apply Teaching Preset: Hide new papers, refresh IDF", use_container_width=True):
-            st.session_state.shift_include_incoming = False
-            st.session_state.shift_refresh_idf = True
-            st.session_state.shift_target_focus = "DOC-03"
+    orig_texts_f = [d.abstract for d in fixture_orig]
+    all_texts_f = [d.abstract for d in fixture_all]
+    orig_ids_f = [d.doc_id for d in fixture_orig]
+    all_ids_f = [d.doc_id for d in fixture_all]
+
+    vec_base_f = TextVectorizer().fit(orig_texts_f)
+    c_b_f, z_b_f, x_b_f = vec_base_f.transform(orig_texts_f)
+
+    # Refreshed IDF vectorizer
+    vec_ref_f = TextVectorizer()
+    vec_ref_f.feature_names = list(vec_base_f.feature_names)
+    vec_ref_f.vocabulary = dict(vec_base_f.vocabulary)
+    vec_ref_f.n_documents = len(all_texts_f)
+    df_exp = np.zeros(len(vec_base_f.feature_names), dtype=np.int64)
+    for t_doc in [vec_ref_f.tokenizer(d) for d in all_texts_f]:
+        for term in set(t_doc):
+            if term in vec_ref_f.vocabulary:
+                df_exp[vec_ref_f.vocabulary[term]] += 1
+    vec_ref_f.doc_frequencies = df_exp
+    vec_ref_f.idf_weights = np.log((1.0 + vec_ref_f.n_documents) / (1.0 + df_exp)) + 1.0
+    vec_ref_f.is_fitted = True
+
+    # Controls
+    col_preset, col_toggles = st.columns([1.5, 2.5])
+    with col_preset:
+        apply_preset = st.button("⭐ Apply Preset: Hide new papers, refresh IDF", use_container_width=True)
+        if "shift_ref_toggle" not in st.session_state:
+            st.session_state.shift_ref_toggle = True
+        if "shift_inc_toggle" not in st.session_state:
+            st.session_state.shift_inc_toggle = False
+
+        if apply_preset:
+            st.session_state.shift_ref_toggle = True
+            st.session_state.shift_inc_toggle = False
             st.rerun()
 
-    with ctrl_col2:
-        if st.button("Reset to Baseline (7 candidates, frozen IDF)", use_container_width=True):
-            st.session_state.shift_include_incoming = False
-            st.session_state.shift_refresh_idf = False
-            st.rerun()
+    with col_toggles:
+        tog1, tog2 = st.columns(2)
+        with tog1:
+            st.session_state.shift_inc_toggle = st.checkbox(
+                "Include incoming papers in candidate results",
+                value=st.session_state.shift_inc_toggle,
+            )
+        with tog2:
+            st.session_state.shift_ref_toggle = st.checkbox(
+                "Recompute IDF using expanded 10-document corpus statistics",
+                value=st.session_state.shift_ref_toggle,
+            )
 
-    with ctrl_col3:
-        st.session_state.shift_target_focus = st.selectbox(
-            "Focus Document to Inspect:",
-            options=orig_ids,
-            index=orig_ids.index(st.session_state.shift_target_focus) if st.session_state.shift_target_focus in orig_ids else 2,
-        )
-
-    # Independent Toggles
-    tog_col1, tog_col2 = st.columns(2)
-    with tog_col1:
-        st.session_state.shift_include_incoming = st.checkbox(
-            "Include incoming papers in candidate search results",
-            value=st.session_state.shift_include_incoming,
-            help="If checked, the 3 incoming papers (DOC-08 to DOC-10) are eligible to appear in search rankings.",
-        )
-    with tog_col2:
-        st.session_state.shift_refresh_idf = st.checkbox(
-            "Recompute IDF using expanded 10-document corpus statistics",
-            value=st.session_state.shift_refresh_idf,
-            help="If checked, DF and IDF are recalculated across all 10 papers, diluting terms like 'consolidation'.",
-        )
-
-    # Compute Baseline Results
-    ret_baseline = EvidenceRetrieval(vec_orig)
-    _, _, results_baseline = ret_baseline.search(
+    # Search executions
+    ret_b = EvidenceRetrieval(vec_base_f)
+    _, _, res_base = ret_b.search(
         DEFAULT_TEACHING_CLAIM,
-        orig_ids,
-        [d.title for d in orig_docs],
-        orig_texts,
-        [d.annotation for d in orig_docs],
-        x_orig,
-        c_orig,
+        orig_ids_f,
+        [d.title for d in fixture_orig],
+        orig_texts_f,
+        [d.annotation for d in fixture_orig],
+        x_b_f,
+        c_b_f,
     )
 
-    # Compute Updated Shift Results
-    active_shift_vec = vec_refreshed if st.session_state.shift_refresh_idf else vec_orig
-    shift_candidate_docs = all_docs if st.session_state.shift_include_incoming else orig_docs
-    shift_candidate_ids = [d.doc_id for d in shift_candidate_docs]
-    shift_candidate_texts = [d.abstract for d in shift_candidate_docs]
-    shift_candidate_titles = [d.title for d in shift_candidate_docs]
-    shift_candidate_annotations = [d.annotation for d in shift_candidate_docs]
+    active_shift_vec = vec_ref_f if st.session_state.shift_ref_toggle else vec_base_f
+    cand_docs = fixture_all if st.session_state.shift_inc_toggle else fixture_orig
+    cand_texts = [d.abstract for d in cand_docs]
+    cand_ids = [d.doc_id for d in cand_docs]
+    cand_titles = [d.title for d in cand_docs]
+    cand_ann = [d.annotation for d in cand_docs]
 
-    c_shift, z_shift, x_shift = active_shift_vec.transform(shift_candidate_texts)
-    ret_shift = EvidenceRetrieval(active_shift_vec)
-    _, _, results_updated = ret_shift.search(
+    c_s, z_s, x_s = active_shift_vec.transform(cand_texts)
+    ret_s = EvidenceRetrieval(active_shift_vec)
+    _, _, res_shift = ret_s.search(
         DEFAULT_TEACHING_CLAIM,
-        shift_candidate_ids,
-        shift_candidate_titles,
-        shift_candidate_texts,
-        shift_candidate_annotations,
-        x_shift,
-        c_shift,
+        cand_ids,
+        cand_titles,
+        cand_texts,
+        cand_ann,
+        x_s,
+        c_s,
     )
 
-    # Side-by-Side Comparison
-    col_base_top5, col_upd_top5 = st.columns(2)
-
-    with col_base_top5:
-        st.markdown("#### 🏛️ Baseline Top 5 (Frozen IDF, N=7)")
-        for r in results_baseline[:5]:
-            is_focus = (r.doc_id == st.session_state.shift_target_focus)
+    col_t5_base, col_t5_exp = st.columns(2)
+    with col_t5_base:
+        st.markdown("#### 🏛️ Baseline Top 5 (N=7, Frozen IDF)")
+        for r in res_base[:5]:
+            is_target = (r.doc_id == "DOC-03")
             st.markdown(
                 f"""
-                <div style="border:1px solid {'#9333ea' if is_focus else '#cbd5e1'};
-                            background-color:{'#faf5ff' if is_focus else '#ffffff'};
+                <div style="border:1px solid {'#9333ea' if is_target else '#cbd5e1'};
+                            background-color:{'#faf5ff' if is_target else '#ffffff'};
                             border-radius:6px; padding:8px 12px; margin-bottom:6px;">
                   <b>Rank #{r.rank} — {r.doc_id}</b> (Score: <code>{r.score:.4f}</code>)
-                  {' <span style=\"color:#9333ea; font-weight:bold;\">★ FOCUS TARGET</span>' if is_focus else ''}<br>
+                  {' <span style=\"color:#9333ea; font-weight:bold;\">★ FOCUS TARGET</span>' if is_target else ''}<br>
                   <span style="font-size:0.85rem; color:#475569;">{r.title}</span>
                 </div>
                 """,
                 unsafe_allow_html=True,
             )
 
-    with col_upd_top5:
+    with col_t5_exp:
         st.markdown(
-            f"#### ⚡ Experimental Top 5 "
-            f"({'Expanded Candidates' if st.session_state.shift_include_incoming else 'Fixed 7 Candidates'}, "
-            f"{'Refreshed IDF' if st.session_state.shift_refresh_idf else 'Frozen IDF'})"
+            f"#### ⚡ Shifted Top 5 "
+            f"({'Expanded Candidates' if st.session_state.shift_inc_toggle else 'Fixed 7 Candidates'}, "
+            f"{'Refreshed IDF' if st.session_state.shift_ref_toggle else 'Frozen IDF'})"
         )
-        base_rank_map = {r.doc_id: r.rank for r in results_baseline}
-
-        for r in results_updated[:5]:
-            is_focus = (r.doc_id == st.session_state.shift_target_focus)
-            b_rank = base_rank_map.get(r.doc_id)
-            if b_rank is None:
-                mov_badge = "<span style='color:#059669; font-weight:bold;'>[NEW CANDIDATE]</span>"
-            elif b_rank > r.rank:
-                mov_badge = f"<span style='color:#059669; font-weight:bold;'>[Rose {b_rank - r.rank} place{'s' if b_rank - r.rank > 1 else ''}]</span>"
-            elif b_rank < r.rank:
-                mov_badge = f"<span style='color:#dc2626; font-weight:bold;'>[Fell {r.rank - b_rank} place{'s' if r.rank - b_rank > 1 else ''}]</span>"
+        base_map = {r.doc_id: r.rank for r in res_base}
+        for r in res_shift[:5]:
+            is_target = (r.doc_id == "DOC-03")
+            b_r = base_map.get(r.doc_id)
+            if b_r is None:
+                mov = "<span style='color:#059669; font-weight:bold;'>[NEW CANDIDATE]</span>"
+            elif b_r > r.rank:
+                mov = f"<span style='color:#059669; font-weight:bold;'>[Rose {b_r - r.rank}]</span>"
+            elif b_r < r.rank:
+                mov = f"<span style='color:#dc2626; font-weight:bold;'>[Fell {r.rank - b_r}]</span>"
             else:
-                mov_badge = "<span style='color:#64748b;'>[Unchanged]</span>"
+                mov = "<span style='color:#64748b;'>[Unchanged]</span>"
 
             st.markdown(
                 f"""
-                <div style="border:1px solid {'#9333ea' if is_focus else '#cbd5e1'};
-                            background-color:{'#faf5ff' if is_focus else '#ffffff'};
+                <div style="border:1px solid {'#9333ea' if is_target else '#cbd5e1'};
+                            background-color:{'#faf5ff' if is_target else '#ffffff'};
                             border-radius:6px; padding:8px 12px; margin-bottom:6px;">
-                  <b>Rank #{r.rank} — {r.doc_id}</b> (Score: <code>{r.score:.4f}</code>) {mov_badge}<br>
+                  <b>Rank #{r.rank} — {r.doc_id}</b> (Score: <code>{r.score:.4f}</code>) {mov}<br>
                   <span style="font-size:0.85rem; color:#475569;">{r.title}</span>
                 </div>
                 """,
                 unsafe_allow_html=True,
             )
 
-    # Deep-Dive on Target Document Demotion
+    # Demoted Target Paper Breakdown
+    r_target_base = next((r for r in res_base if r.doc_id == "DOC-03"), None)
+    r_target_shift = next((r for r in res_shift if r.doc_id == "DOC-03"), None)
+
+    idx_cons = vec_base_f.vocabulary["consolidation"]
+    df_b_c = int(vec_base_f.doc_frequencies[idx_cons])
+    df_s_c = int(active_shift_vec.doc_frequencies[idx_cons])
+    idf_b_c = float(vec_base_f.idf_weights[idx_cons])
+    idf_s_c = float(active_shift_vec.idf_weights[idx_cons])
+
     st.markdown("---")
-    focus_did = st.session_state.shift_target_focus
-    st.markdown(f"#### 🔬 Detailed Impact Analysis for Focus Document: **{focus_did}**")
+    st.markdown("#### 🔬 Detailed Mathematical Demotion Breakdown: `DOC-03`")
 
-    # Metrics before and after
-    b_res = next((r for r in results_baseline if r.doc_id == focus_did), None)
-    u_res = next((r for r in results_updated if r.doc_id == focus_did), None)
+    col_tbl, col_expl = st.columns([1.5, 1.5])
+    with col_tbl:
+        df_demo = pd.DataFrame([
+            {"Parameter": "Corpus Documents N", "Baseline": "7", "Shifted": f"{active_shift_vec.n_documents}", "Delta": f"+{active_shift_vec.n_documents-7}"},
+            {"Parameter": "DF('consolidation')", "Baseline": f"{df_b_c}", "Shifted": f"{df_s_c}", "Delta": f"+{df_s_c-df_b_c} (diluted)"},
+            {"Parameter": "IDF('consolidation')", "Baseline": f"{idf_b_c:.4f}", "Shifted": f"{idf_s_c:.4f}", "Delta": f"{idf_s_c-idf_b_c:.4f}"},
+            {"Parameter": "DOC-03 Score", "Baseline": f"{r_target_base.score:.4f}", "Shifted": f"{r_target_shift.score:.4f}", "Delta": f"{r_target_shift.score-r_target_base.score:.4f}"},
+            {"Parameter": "DOC-03 Standing", "Baseline": f"Rank #{r_target_base.rank} (in Top 5)", "Shifted": f"<b style='color:#dc2626;'>Rank #{r_target_shift.rank} (OUT OF TOP 5)</b>", "Delta": f"Fell {r_target_shift.rank-r_target_base.rank} place"},
+        ])
+        st.markdown(df_demo.to_html(classes="table", index=False, escape=False), unsafe_allow_html=True)
 
-    b_rank_str = f"Rank #{b_res.rank} (in Top 5)" if b_res and b_res.rank <= 5 else (f"Rank #{b_res.rank}" if b_res else "N/A")
-    u_rank_str = f"Rank #{u_res.rank} (in Top 5)" if u_res and u_res.rank <= 5 else (f"<b style='color:#dc2626;'>Rank #{u_res.rank} (OUT OF TOP 5)</b>" if u_res else "N/A")
-
-    shift_col1, shift_col2 = st.columns([1.5, 1.5])
-    with shift_col1:
-        # Check DF and IDF of key term 'consolidation'
-        idx_cons = vec_orig.vocabulary.get("consolidation", 0)
-        df_base_cons = int(vec_orig.doc_frequencies[idx_cons])
-        df_upd_cons = int(active_shift_vec.doc_frequencies[idx_cons])
-        idf_base_cons = float(vec_orig.idf_weights[idx_cons])
-        idf_upd_cons = float(active_shift_vec.idf_weights[idx_cons])
-
-        table_data = [
-            {"Parameter / Metric": "Corpus Documents N", "Baseline": "7", "Shifted": f"{active_shift_vec.n_documents}", "Net Change": f"+{active_shift_vec.n_documents - 7}"},
-            {"Parameter / Metric": "DF('consolidation')", "Baseline": f"{df_base_cons}", "Shifted": f"{df_upd_cons}", "Net Change": f"+{df_upd_cons - df_base_cons} (diluted)"},
-            {"Parameter / Metric": "IDF('consolidation')", "Baseline": f"{idf_base_cons:.4f}", "Shifted": f"{idf_upd_cons:.4f}", "Net Change": f"{idf_upd_cons - idf_base_cons:.4f}"},
-            {"Parameter / Metric": f"{focus_did} Cosine Score", "Baseline": f"{b_res.score:.4f}" if b_res else "-", "Shifted": f"{u_res.score:.4f}" if u_res else "-", "Net Change": f"{(u_res.score - b_res.score):.4f}" if (b_res and u_res) else "-"},
-            {"Parameter / Metric": f"{focus_did} Standing", "Baseline": b_rank_str, "Shifted": u_rank_str, "Net Change": f"Fell {u_res.rank - b_res.rank} places" if (b_res and u_res and u_res.rank > b_res.rank) else "Unchanged"},
-        ]
-        st.markdown(pd.DataFrame(table_data).to_html(classes="table", index=False, escape=False), unsafe_allow_html=True)
-
-    with shift_col2:
+    with col_expl:
         st.markdown(
             f"""
-            <div class="metric-card">
-              <div style="font-weight:700; margin-bottom:6px; color:#1e293b;">Mathematical Explanation:</div>
-              <ol style="margin-bottom:0; font-size:0.88rem; line-height:1.5;">
-                <li><b>IDF Dilution:</b> The incoming batch (DOC-08 to DOC-10) contains unrelated discussions of 'consolidation' (orthopedic bone consolidation and fiscal policy).
-                    This drives <code>DF('consolidation')</code> up from 4 to 7, reducing its IDF from <b>{idf_base_cons:.4f}</b> to <b>{idf_upd_cons:.4f}</b>.</li>
-                <li><b>Vector Redistribution:</b> Because <b>{focus_did}</b> relies primarily on 'consolidation', its unnormalized coordinate decreases.
-                    L2 normalization redistributes vector energy, weakening its match with the query.</li>
-                <li><b>Shortlist Displacement:</b> Meanwhile, competitor document <b>DOC-06</b> has terms like 'stabilizes', 'associative', and 'memory' whose DF was not diluted.
-                    DOC-06's score rises relative to {focus_did}, overtaking it to claim the 5th spot!</li>
-              </ol>
+            <div class="math-card">
+              <div style="font-weight:700; margin-bottom:6px;">Why DOC-03 Dropped:</div>
+              1. <b>IDF Dilution:</b> The incoming papers discuss unrelated consolidation (bone repair & fiscal budgets),
+                 causing <code>DF('consolidation')</code> to jump from 4 to 7, reducing its IDF from <b>{idf_b_c:.4f}</b> to <b>{idf_s_c:.4f}</b>.<br>
+              2. <b>Vector Normalization:</b> Because DOC-03 depends heavily on 'consolidation', its relative vector length drops.<br>
+              3. <b>Overtaken by DOC-06:</b> DOC-06 contains 'stabilizes' and 'memory'—words whose IDF was not diluted—allowing DOC-06 to overtake DOC-03 and claim the #5 spot!
             </div>
             """,
             unsafe_allow_html=True,
         )
-
-    # Full Ranked Candidate Explorer
-    st.markdown("---")
-    with st.expander("📋 View Complete Candidate Rankings Table (All Positions)"):
-        all_comp_data = []
-        for r in results_updated:
-            b_r = base_rank_map.get(r.doc_id)
-            all_comp_data.append({
-                "Doc ID": r.doc_id,
-                "Updated Rank": r.rank,
-                "Baseline Rank": b_r if b_r else "None (New)",
-                "Score": f"{r.score:.4f}",
-                "Title": r.title,
-                "Category": doc_id_to_doc[r.doc_id].category,
-            })
-        st.dataframe(pd.DataFrame(all_comp_data), use_container_width=True, hide_index=True)
-
-    st.markdown(
-        """
-        <div class="question-box">
-          <b>Key Pedagogical Takeaway for Students:</b><br>
-          <i>"Can a paper fall out of the top five when its own text and the candidate list stay fixed?"</i><br>
-          <b>YES.</b> Evidence retrieval is not an absolute judgment of a document in isolation; it is a relative judgment
-          conditioned on global corpus statistics. Diluting an informative term's rarity globally shifts vector geometry
-          and reshuffles the ranking of untouched papers.
-        </div>
-        """,
-        unsafe_allow_html=True,
-    )

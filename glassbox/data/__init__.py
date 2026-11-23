@@ -6,6 +6,12 @@ from .fixture import (
     get_original_corpus,
     get_incoming_batch,
 )
+from .arxiv_corpus import (
+    PaperRecord,
+    ARXIV_PAPERS,
+    get_arxiv_corpus,
+    get_papers_by_category,
+)
 
 __all__ = [
     "ResearchAbstract",
@@ -14,4 +20,8 @@ __all__ = [
     "get_teaching_fixture",
     "get_original_corpus",
     "get_incoming_batch",
+    "PaperRecord",
+    "ARXIV_PAPERS",
+    "get_arxiv_corpus",
+    "get_papers_by_category",
 ]

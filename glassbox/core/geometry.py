@@ -207,3 +207,58 @@ def fit_pca_3d(X: np.ndarray, term_names: List[str]) -> PCA3DResult:
         jacobi_iterations=n_iter,
         is_degenerate=is_degenerate,
     )
+
+
+@dataclass
+class SVDRankKResult:
+    """Encapsulates truncated rank-k SVD reconstruction entities."""
+    k: int
+    singular_values: np.ndarray      # (p,)
+    U: np.ndarray                    # (n, p)
+    Vt: np.ndarray                   # (p, p)
+    X_reconstructed: np.ndarray      # (n, p)
+    residual_matrix: np.ndarray      # (n, p)
+    frobenius_error: float
+    relative_error: float
+    energy_captured: float           # sum(sigma_1..k^2) / sum(sigma_all^2)
+
+
+def compute_svd_rank_k(X: np.ndarray, k: int) -> SVDRankKResult:
+    """Compute exact full SVD and rank-k truncated reconstruction:
+    X_hat_k = sum_{j=1}^k sigma_j * u_j * v_j^T
+    """
+    n, p = X.shape
+    if k < 1 or k > p:
+        raise ValueError(f"Rank k must be between 1 and {p}, got {k}.")
+
+    U, S, Vt = np.linalg.svd(X, full_matrices=False)
+
+    # Reconstruct with rank k
+    # U_k is (n, k), S_k is (k,), Vt_k is (k, p)
+    U_k = U[:, :k]
+    S_k = S[:k]
+    Vt_k = Vt[:k, :]
+
+    X_hat_k = (U_k * S_k) @ Vt_k
+    residual = X - X_hat_k
+
+    frob_orig = float(np.linalg.norm(X, ord="fro"))
+    frob_err = float(np.linalg.norm(residual, ord="fro"))
+    rel_err = (frob_err / frob_orig) if frob_orig > 0 else 0.0
+
+    tot_energy = float(np.sum(S ** 2))
+    k_energy = float(np.sum(S_k ** 2))
+    energy_ratio = (k_energy / tot_energy) if tot_energy > 0 else 1.0
+
+    return SVDRankKResult(
+        k=k,
+        singular_values=S,
+        U=U,
+        Vt=Vt,
+        X_reconstructed=X_hat_k,
+        residual_matrix=residual,
+        frobenius_error=frob_err,
+        relative_error=rel_err,
+        energy_captured=energy_ratio,
+    )
+

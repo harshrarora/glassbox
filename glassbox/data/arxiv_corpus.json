@@ -1,0 +1,514 @@
+[
+  {
+    "id": "arxiv:1512.03385",
+    "title": "Deep Residual Learning for Image Recognition",
+    "abstract": "Deeper convolutional neural networks are notoriously difficult to optimize due to vanishing gradients. We present a residual learning framework where layers explicitly fit a residual mapping with reference to the layer inputs, rather than attempting to learn unreferenced mappings. Extensive empirical evaluation on ImageNet demonstrates that residual networks achieve superior accuracy while enjoying accelerated convergence during visual training.",
+    "category": "cs.CV",
+    "authors": "K. He, X. Zhang, S. Ren, J. Sun",
+    "year": 2015
+  },
+  {
+    "id": "arxiv:2010.11929",
+    "title": "An Image is Worth 16x16 Words: Transformers for Image Recognition at Scale",
+    "abstract": "While the self-attention architecture has become the de facto standard for natural language processing, its applications to computer vision remain limited. In this work, we demonstrate that a pure Vision Transformer applied directly to sequences of flattened 16x16 image patches can attain excellent classification results on ImageNet benchmarks when pretrained on substantial image datasets, rivaling state-of-the-art convolutional networks.",
+    "category": "cs.CV",
+    "authors": "A. Dosovitskiy, L. Beyer, A. Kolesnikov, D. Weissenborn et al.",
+    "year": 2020
+  },
+  {
+    "id": "arxiv:1506.02640",
+    "title": "You Only Look Once: Unified, Real-Time Object Detection",
+    "abstract": "We introduce YOLO, an end-to-end framework for object detection that conceptualizes spatial bounding box prediction and class probability assignment as a single regression problem directly from raw image pixels. A unified convolutional architecture enables real-time inference speeds while minimizing background localization errors across multi-object visual scenes.",
+    "category": "cs.CV",
+    "authors": "J. Redmon, S. Divvala, R. Girshick, A. Farhadi",
+    "year": 2015
+  },
+  {
+    "id": "arxiv:2003.08934",
+    "title": "NeRF: Representing Scenes as Neural Radiance Fields for View Synthesis",
+    "abstract": "We present an approach that achieves state-of-the-art visual fidelity in novel view synthesis of complex 3D scenes. The method optimizes an underlying continuous volumetric scene function parameterized by a fully-connected deep network mapping 5D coordinates comprising spatial locations and viewing directions to volume density and directional emitted radiance.",
+    "category": "cs.CV",
+    "authors": "B. Mildenhall, P. P. Srinivasan, M. Tancik, J. T. Barron et al.",
+    "year": 2020
+  },
+  {
+    "id": "arxiv:1505.04597",
+    "title": "U-Net: Convolutional Networks for Biomedical Image Segmentation",
+    "abstract": "Biomedical image segmentation demands precise pixel-wise semantic masks even with scarce annotated training exemplars. We present a u-shaped convolutional network architecture featuring contracting encoder paths to capture context paired with symmetric expanding decoder paths with skip connections that enable precise spatial localization on microscopic imaging.",
+    "category": "cs.CV",
+    "authors": "O. Ronneberger, P. Fischer, T. Brox",
+    "year": 2015
+  },
+  {
+    "id": "arxiv:1406.2661",
+    "title": "Generative Adversarial Networks for Image Synthesis",
+    "abstract": "We propose an adversarial framework for estimating generative models via a minimax two-player game. A generative network captures the data distribution while a discriminative network estimates the probability that an image sample originated from training distribution rather than generative synthesis, driving generator outputs toward realistic image manifolds.",
+    "category": "cs.CV",
+    "authors": "I. J. Goodfellow, J. Pouget-Abadie, M. Mirza, B. Xu et al.",
+    "year": 2014
+  },
+  {
+    "id": "arxiv:1703.06870",
+    "title": "Mask R-CNN for Instance Segmentation",
+    "abstract": "We present an intuitive framework for object instance segmentation that augments standard Faster R-CNN by adding a parallel branch for predicting pixel-level object masks alongside existing classification and bounding box regression branches. RoIAlign removes quantization artifacts and significantly enhances segmentation accuracy on COCO benchmark datasets.",
+    "category": "cs.CV",
+    "authors": "K. He, G. Gkioxari, P. Doll\u00e1r, R. Girshick",
+    "year": 2017
+  },
+  {
+    "id": "arxiv:2112.10752",
+    "title": "High-Resolution Image Synthesis with Latent Diffusion Models",
+    "abstract": "Diffusion models attain competitive visual generation quality but require massive computational operations in pixel space. We formulate latent diffusion models that operate within the latent space of pretrained perceptual autoencoders, providing efficient cross-attention conditioning mechanisms for text-to-image synthesis, visual super-resolution, and semantic inpainting.",
+    "category": "cs.CV",
+    "authors": "R. Rombach, A. Blattmann, D. Lorenz, P. Esser, B. Ommer",
+    "year": 2021
+  },
+  {
+    "id": "arxiv:2304.02643",
+    "title": "Segment Anything: Zero-Shot Generalist Visual Segmentation",
+    "abstract": "We introduce the Segment Anything project comprising a promptable foundation model for image segmentation trained on over one billion high-quality segmentation masks. The architecture executes real-time promptable segmentation capable of zero-shot transfer to unfamiliar visual tasks, edge detection, and interactive object boundary selection.",
+    "category": "cs.CV",
+    "authors": "A. Kirillov, E. Mintun, N. Ravi, H. Mao, C. Feichtenhofer et al.",
+    "year": 2023
+  },
+  {
+    "id": "arxiv:2103.14030",
+    "title": "Swin Transformer: Hierarchical Vision Transformer using Shifted Windows",
+    "abstract": "This paper introduces Swin Transformer, a hierarchical vision backbone that computes self-attention within shifted local windows. The shifted windowing scheme limits self-attention computation to non-overlapping local image regions while introducing cross-window connections, yielding linear computational complexity relative to input image resolution for dense visual prediction.",
+    "category": "cs.CV",
+    "authors": "Z. Liu, Y. Lin, Y. Cao, H. Hu, Y. Wei et al.",
+    "year": 2021
+  },
+  {
+    "id": "arxiv:1612.00593",
+    "title": "PointNet: Deep Learning on Point Sets for 3D Classification and Segmentation",
+    "abstract": "Point cloud spatial data is unordered and irregular, making it poorly suited for conventional 3D convolutional architectures. We devise PointNet, a deep architecture that consumes raw 3D coordinate point sets directly. Symmetric pooling functions ensure invariance to permutation while spatial transform networks align geometric poses for accurate 3D scene classification.",
+    "category": "cs.CV",
+    "authors": "C. R. Qi, H. Su, K. Mo, L. J. Guibas",
+    "year": 2016
+  },
+  {
+    "id": "arxiv:1206.5538",
+    "title": "ImageNet Classification with Deep Convolutional Neural Networks",
+    "abstract": "We trained a large deep convolutional neural network to classify high-resolution image benchmarks in the ImageNet challenge. The network incorporates GPU-accelerated convolution routines, rectified linear units (ReLU) to accelerate convergence, and dropout regularization to prevent severe overfitting across dense classification layers.",
+    "category": "cs.CV",
+    "authors": "A. Krizhevsky, I. Sutskever, G. E. Hinton",
+    "year": 2012
+  },
+  {
+    "id": "arxiv:2103.00020",
+    "title": "Learning Transferable Visual Models From Natural Language Supervision",
+    "abstract": "State-of-the-art visual models typically depend on static pre-determined discrete class labels. We propose CLIP to train vision and language encoders jointly via contrastive loss on raw web text-image pairs. The learned multimodal representation exhibits extraordinary zero-shot classification robustness across dozens of diverse computer vision benchmarks.",
+    "category": "cs.CV",
+    "authors": "A. Radford, J. W. Kim, C. Hallacy, A. Ramesh et al.",
+    "year": 2021
+  },
+  {
+    "id": "arxiv:2006.11239",
+    "title": "Denoising Diffusion Probabilistic Models for High-Fidelity Image Generation",
+    "abstract": "We demonstrate high-quality visual sample generation using diffusion probabilistic models parameterized by a parameterized Markov chain trained using variational inference. Our objective optimizes a simplified denoising score matching objective equivalent to predicting added Gaussian noise across discrete diffusion timesteps.",
+    "category": "cs.CV",
+    "authors": "J. Ho, A. Jain, P. Abbeel",
+    "year": 2020
+  },
+  {
+    "id": "arxiv:2002.05709",
+    "title": "A Simple Framework for Contrastive Learning of Visual Representations",
+    "abstract": "We present SimCLR, a simplified framework for unsupervised visual feature learning. Without specialized memory banks or architectural constraints, contrastive learning between stochastically augmented image views paired with nonlinear projection heads yields self-supervised visual representations that rival fully supervised convolutional models.",
+    "category": "cs.CV",
+    "authors": "T. Chen, S. Kornblith, M. Norouzi, G. Hinton",
+    "year": 2020
+  },
+  {
+    "id": "arxiv:1409.1556",
+    "title": "Very Deep Convolutional Networks for Large-Scale Visual Recognition",
+    "abstract": "This paper investigates the effect of convolutional network depth on visual recognition accuracy in large-scale image settings. By fixing architecture filters to homogenous small 3x3 receptive fields throughout all layers, increasing depth to 16-19 layers provides dramatic classification and spatial feature localization gains across visual benchmarks.",
+    "category": "cs.CV",
+    "authors": "K. Simonyan, A. Zisserman",
+    "year": 2014
+  },
+  {
+    "id": "arxiv:1706.03762",
+    "title": "Attention Is All You Need",
+    "abstract": "Dominant sequence transduction models rely on complex recurrent or convolutional neural networks within encoder-decoder frameworks. We propose the Transformer, an architecture eschewing recurrence entirely in favor of multi-head self-attention mechanisms. Experiments on English-to-German and English-to-French translation benchmarks show superior BLEU scores while training substantially faster.",
+    "category": "cs.CL",
+    "authors": "A. Vaswani, N. Shazeer, N. Parmar, J. Uszkoreit et al.",
+    "year": 2017
+  },
+  {
+    "id": "arxiv:1810.04805",
+    "title": "BERT: Pre-training of Deep Bidirectional Transformers for Language Understanding",
+    "abstract": "We introduce BERT, designed to pretrain deep bidirectional representations from unlabeled textual corpora by jointly conditioning on left and right contextual tokens across all layers. Pre-trained BERT models fine-tuned with a single additional output layer achieve state-of-the-art results across eleven natural language processing benchmarks, including GLUE and SQuAD question answering.",
+    "category": "cs.CL",
+    "authors": "J. Devlin, M. W. Chang, K. Lee, K. Toutanova",
+    "year": 2018
+  },
+  {
+    "id": "arxiv:2005.14165",
+    "title": "Language Models are Few-Shot Learners",
+    "abstract": "Recent work demonstrates gains from pretraining language models on broad web text followed by task-specific fine-tuning. Here we scale autoregressive language models to 175 billion parameters (GPT-3) and evaluate execution under zero-shot, one-shot, and few-shot in-context demonstration settings without gradient weight updates, displaying strong performance across diverse linguistic tasks.",
+    "category": "cs.CL",
+    "authors": "T. B. Brown, B. Mann, N. Ryder, M. Subbiah, J. Kaplan et al.",
+    "year": 2020
+  },
+  {
+    "id": "arxiv:1907.11692",
+    "title": "RoBERTa: A Robustly Optimized BERT Pretraining Approach",
+    "abstract": "Language model pretraining produces substantial performance improvements, but determining the optimal training parameters remains elusive. We conduct a careful replication study of BERT and demonstrate that BERT was significantly undertrained. By training on larger batch sizes, longer sequences, removing next-sentence prediction, and dynamically altering masked tokens, RoBERTa establishes improved benchmark results.",
+    "category": "cs.CL",
+    "authors": "Y. Liu, M. Ott, N. Goyal, J. Du, M. Joshi et al.",
+    "year": 2019
+  },
+  {
+    "id": "arxiv:1301.3781",
+    "title": "Efficient Estimation of Word Representations in Vector Space",
+    "abstract": "We propose novel model architectures for computing continuous vector representations of words from huge linguistic datasets. Continuous Bag-of-Words and Skip-gram architectures maximize semantic vector similarity between context words while minimizing computational complexity, capturing precise syntactic and semantic word relationships verified on syntactic analogy tasks.",
+    "category": "cs.CL",
+    "authors": "T. Mikolov, K. Chen, G. Corrado, J. Dean",
+    "year": 2013
+  },
+  {
+    "id": "arxiv:1910.10683",
+    "title": "Exploring the Limits of Transfer Learning with a Unified Text-to-Text Transformer",
+    "abstract": "Transfer learning has emerged as a powerful technique in natural language processing. In this work, we present a unified framework that casts all text-based language problems into a text-to-text format, encompassing summarization, question answering, and translation. Systematic scaling of model capacity and unsupervised pretraining corpora produces the versatile T5 language model.",
+    "category": "cs.CL",
+    "authors": "C. Raffel, N. Shazeer, A. Roberts, K. Lee, S. Narang et al.",
+    "year": 2019
+  },
+  {
+    "id": "arxiv:2302.13971",
+    "title": "LLaMA: Open and Efficient Foundation Language Models",
+    "abstract": "We introduce LLaMA, a collection of foundation language models ranging from 7B to 65B parameters. Our models are trained on trillions of publicly accessible tokens, demonstrating that it is possible to train state-of-the-art language models using solely open datasets while achieving competitive generative inference on downstream NLP benchmarks.",
+    "category": "cs.CL",
+    "authors": "H. Touvron, T. Lavril, G. Izacard, X. Martinet et al.",
+    "year": 2023
+  },
+  {
+    "id": "arxiv:2106.09685",
+    "title": "LoRA: Low-Rank Adaptation of Large Language Models",
+    "abstract": "Fine-tuning large language models by updating all parameters is computationally prohibitive. We propose Low-Rank Adaptation (LoRA), which freezes pre-trained model weights and injects trainable rank decomposition matrices into transformer attention layers. LoRA reduces trainable parameter counts by 10,000-fold while preserving full fine-tuning translation accuracy.",
+    "category": "cs.CL",
+    "authors": "E. J. Hu, Y. Shen, P. Wallis, Z. Allen-Zhu, Y. Li et al.",
+    "year": 2021
+  },
+  {
+    "id": "arxiv:1802.05365",
+    "title": "Deep Contextualized Word Representations",
+    "abstract": "We introduce a new type of deep contextualized word representation (ELMo) that models both complex characteristics of word use (meaning and syntax) and polysemy variations across linguistic contexts. Representations are derived from the internal states of a deep bidirectional language model, resulting in immediate performance improvements across diverse NLP tasks.",
+    "category": "cs.CL",
+    "authors": "M. E. Peters, M. Neumann, M. Iyyer, M. Gardner et al.",
+    "year": 2018
+  },
+  {
+    "id": "arxiv:1908.10084",
+    "title": "Sentence-BERT: Sentence Embeddings using Siamese BERT-Networks",
+    "abstract": "BERT set new state-of-the-art performance for sentence-pair regression but requires unfeasible computational overhead for semantic search. We present Sentence-BERT (SBERT), a modification of the pretrained BERT network utilizing siamese and triplet network structures to derive semantically meaningful sentence embeddings that can be compared using cosine similarity.",
+    "category": "cs.CL",
+    "authors": "N. Reimers, I. Gurevych",
+    "year": 2019
+  },
+  {
+    "id": "arxiv:2203.02155",
+    "title": "Training Language Models to Follow Instructions with Human Feedback",
+    "abstract": "Making language models larger does not inherently make them better at following user intent. We use reinforcement learning from human feedback (RLHF) to fine-tune language models to follow instructions (InstructGPT). Trained models demonstrate improved truthfulness, reduced hallucination, and substantial qualitative preference by human evaluators.",
+    "category": "cs.CL",
+    "authors": "L. Ouyang, J. Wu, X. Jiang, D. Almeida, C. L. Wainwright et al.",
+    "year": 2022
+  },
+  {
+    "id": "arxiv:1409.3215",
+    "title": "Sequence to Sequence Learning with Neural Networks",
+    "abstract": "Deep neural networks struggle when mapping variable-length input sequences to variable-length target sequences. We present an end-to-end multilayered Long Short-Term Memory (LSTM) architecture to map input sequences to vectors of fixed dimensionality and decode target sequences. Reversing input word order significantly improved translation performance on WMT-14 English to French translation.",
+    "category": "cs.CL",
+    "authors": "I. Sutskever, O. Vinyals, Q. V. Le",
+    "year": 2014
+  },
+  {
+    "id": "arxiv:2205.14135",
+    "title": "FlashAttention: Fast and Memory-Efficient Exact Attention with IO-Awareness",
+    "abstract": "Transformers are slow and memory-intensive on long sequences due to quadratic time and space complexity of attention mechanisms. We propose FlashAttention, an exact attention algorithm that reduces memory access overhead between fast GPU SRAM and slow GPU HBM. FlashAttention accelerates Transformer training while expanding practical context window lengths.",
+    "category": "cs.CL",
+    "authors": "T. Dao, D. Y. Fu, S. Ermon, A. Rudra, C. R\u00e9",
+    "year": 2022
+  },
+  {
+    "id": "arxiv:1409.0473",
+    "title": "Neural Machine Translation by Jointly Learning to Align and Translate",
+    "abstract": "Standard neural machine translation compresses an entire source sentence into a single fixed-length vector, creating a bottleneck. We introduce an attention mechanism that allows the model to search for a set of positions in a source sentence where relevant information is concentrated, greatly enhancing translation quality on long linguistic sequences.",
+    "category": "cs.CL",
+    "authors": "D. Bahdanau, K. Cho, Y. Bengio",
+    "year": 2014
+  },
+  {
+    "id": "arxiv:2201.11903",
+    "title": "Chain-of-Thought Prompting Elicits Reasoning in Large Language Models",
+    "abstract": "We explore how generating a series of intermediate reasoning steps\u2014a chain of thought\u2014substantially enhances the ability of large language models to perform complex reasoning. Chain-of-thought prompting elicits emergent mathematical and symbolic reasoning capabilities on challenging arithmetic, common-sense, and symbolic manipulation benchmarks.",
+    "category": "cs.CL",
+    "authors": "J. Wei, X. Wang, D. Schuurmans, M. Bosma, E. Chi et al.",
+    "year": 2022
+  },
+  {
+    "id": "arxiv:2305.18290",
+    "title": "Direct Preference Optimization: Your Language Model is Secretly a Reward Model",
+    "abstract": "Reinforcement learning from human feedback is complex and unstable, requiring training separate reward models and reinforcement learning policies. We propose Direct Preference Optimization (DPO), which derives an exact closed-form mapping between optimal policies and reward functions. DPO optimizes preference satisfaction directly with a simple binary cross-entropy loss.",
+    "category": "cs.CL",
+    "authors": "R. Rafailov, A. Sharma, E. Mitchell, S. Ermon et al.",
+    "year": 2023
+  },
+  {
+    "id": "arxiv:1412.6980",
+    "title": "Adam: A Method for Stochastic Optimization",
+    "abstract": "We introduce Adam, an algorithm for first-order gradient-based optimization of stochastic objective functions. The method computes individual adaptive learning rates for different parameters from estimates of first and second moments of the gradients. Adam is computationally efficient, well-suited for non-stationary objectives, and effective across deep neural network architectures.",
+    "category": "cs.LG",
+    "authors": "D. P. Kingma, J. Ba",
+    "year": 2014
+  },
+  {
+    "id": "arxiv:1502.03167",
+    "title": "Batch Normalization: Accelerating Deep Network Training by Reducing Internal Covariate Shift",
+    "abstract": "Training deep neural networks is complicated by the fact that the distribution of each layer's inputs changes during training. We refer to this phenomenon as internal covariate shift and address it by normalizing layer inputs across mini-batch training samples. Batch Normalization allows much higher learning rates, acts as an effective regularizer, and accelerates training convergence.",
+    "category": "cs.LG",
+    "authors": "S. Ioffe, C. Szegedy",
+    "year": 2015
+  },
+  {
+    "id": "arxiv:1207.0580",
+    "title": "Dropout: A Simple Way to Prevent Neural Networks from Overfitting",
+    "abstract": "Deep neural networks with millions of parameters have immense expressive capacity but are prone to overfitting. Dropout prevents co-adaptation of feature detectors by randomly dropping units and their connections during training. This technique approximates model averaging over exponentially many thinned networks, yielding significant generalization improvements.",
+    "category": "cs.LG",
+    "authors": "N. Srivastava, G. Hinton, A. Krizhevsky, I. Sutskever, R. Salakhutdinov",
+    "year": 2014
+  },
+  {
+    "id": "arxiv:1812.11118",
+    "title": "Reconciling Modern Machine Learning Practice and the Classical Bias-Variance Trade-off",
+    "abstract": "Classical learning theory posits a U-shaped risk curve where increasing model capacity beyond the interpolation threshold causes severe overfitting. We reconcile classical theory with modern deep learning by demonstrating the double descent curve: risk peaks at the interpolation boundary and systematically decreases as overparameterization expands, uncovering the inductive bias of minimum-norm interpolators.",
+    "category": "cs.LG",
+    "authors": "M. Belkin, D. Hsu, S. Ma, S. Mandal",
+    "year": 2019
+  },
+  {
+    "id": "arxiv:1611.03530",
+    "title": "Understanding Deep Learning Requires Rethinking Generalization",
+    "abstract": "We demonstrate through systematic randomization experiments that deep neural networks easily fit completely random labeling of training data. This empirical finding establishes that traditional generalization bounds based on VC-dimension, Rademacher complexity, and uniform stability fail to explain why heavily overparameterized deep architectures generalize well on natural datasets.",
+    "category": "cs.LG",
+    "authors": "C. Zhang, S. Bengio, M. Hardt, B. Recht, O. Vinyals",
+    "year": 2016
+  },
+  {
+    "id": "arxiv:1806.07572",
+    "title": "Neural Tangent Kernel: Convergence and Generalization in Neural Networks",
+    "abstract": "At the infinite-width limit, deep artificial neural networks trained with continuous gradient descent follow linear dynamics governed by a deterministic kernel termed the Neural Tangent Kernel (NTK). We prove that during gradient descent training, the NTK remains constant, establishing an exact theoretical equivalence between infinite-width deep learning and kernel ridge regression.",
+    "category": "cs.LG",
+    "authors": "A. Jacot, F. Gabriel, C. Hongler",
+    "year": 2018
+  },
+  {
+    "id": "arxiv:1607.06450",
+    "title": "Layer Normalization",
+    "abstract": "Batch normalization suffers from severe performance degradation when applied to recurrent neural networks or small mini-batch regimes. We propose Layer Normalization, which computes normalization statistics directly across hidden activation channels within each individual training sample. Layer Normalization stabilizes the hidden state dynamics in sequential networks without introducing batch-dependent dependencies.",
+    "category": "cs.LG",
+    "authors": "J. L. Ba, J. R. Kiros, G. E. Hinton",
+    "year": 2016
+  },
+  {
+    "id": "arxiv:1605.06431",
+    "title": "Residual Networks Behave Like Ensembles of Relatively Shallow Networks",
+    "abstract": "Residual networks allow training of networks with hundreds of layers. We unroll the recurrent residual connections and show that ResNets can be understood as an exponential ensemble of relatively shallow paths. Deleting individual residual blocks during inference causes smooth and graceful degradation rather than catastrophic failure, supporting the ensemble hypothesis of deep residual architectures.",
+    "category": "cs.LG",
+    "authors": "A. Veit, M. J. Wilber, S. Belongie",
+    "year": 2016
+  },
+  {
+    "id": "arxiv:1711.05101",
+    "title": "Decoupled Weight Decay Regularization in AdamW",
+    "abstract": "L2 regularization and weight decay are mathematically identical for standard stochastic gradient descent but diverge when applied to adaptive gradient optimizers. We demonstrate that common implementations of Adam couple weight decay with gradient scaling, penalizing weights with frequent gradients. Decoupling weight decay directly from gradient updates in AdamW restores superior generalization performance.",
+    "category": "cs.LG",
+    "authors": "I. Loshchilov, F. Hutter",
+    "year": 2017
+  },
+  {
+    "id": "arxiv:1609.04836",
+    "title": "On Large-Batch Training for Deep Learning: Generalization Gap and Sharp Minima",
+    "abstract": "Stochastic gradient descent algorithms exhibit a distinct generalization gap when trained with large mini-batch sizes versus small mini-batch regimes. We present empirical evidence that large-batch training methods consistently converge to sharp local minima in the loss landscape, whereas small-batch SGD discovers flat minimizers that correlate strongly with improved generalization on unseen test distributions.",
+    "category": "cs.LG",
+    "authors": "N. S. Keskar, D. Mudigere, J. Nocedal, M. Smelyanskiy, P. T. P. Tang",
+    "year": 2016
+  },
+  {
+    "id": "arxiv:1710.10345",
+    "title": "The Implicit Bias of Gradient Descent on Linearly Separable Data",
+    "abstract": "We analyze gradient descent on linearly separable classification problems with unregularized logistic loss. Although the loss asymptotically approaches zero as weights grow to infinity, the normalized weight vector converges strictly to the maximum-margin direction\u2014the exact solution of hard-margin Support Vector Machines\u2014revealing an implicit geometric inductive bias.",
+    "category": "cs.LG",
+    "authors": "D. Soudry, E. Hoffer, M. S. Nacson, S. Gunasekar, N. Srebro",
+    "year": 2017
+  },
+  {
+    "id": "arxiv:1312.6114",
+    "title": "Auto-Encoding Variational Bayes",
+    "abstract": "Directed probabilistic models with continuous latent variables and intractable posterior distributions pose significant inference challenges. We introduce the Stochastic Gradient Variational Bayes (SGVB) estimator for the evidence lower bound (ELBO) utilizing a reparameterization trick. Variational Auto-Encoders (VAE) optimize generative parameters and approximate inference networks simultaneously using standard gradient descent.",
+    "category": "cs.LG",
+    "authors": "D. P. Kingma, M. Welling",
+    "year": 2013
+  },
+  {
+    "id": "arxiv:1807.03748",
+    "title": "Representation Learning with Contrastive Predictive Coding",
+    "abstract": "Unsupervised representation learning aims to capture meaningful latent factors from high-dimensional observations. We propose Contrastive Predictive Coding (CPC), which learns compact latent representations by predicting future observations in latent space using powerful autoregressive models. The InfoNCE objective maximizes a lower bound on mutual information across diverse domains.",
+    "category": "cs.LG",
+    "authors": "A. van den Oord, Y. Li, O. Vinyals",
+    "year": 2018
+  },
+  {
+    "id": "arxiv:1712.09913",
+    "title": "Visualizing the Loss Landscape of Neural Nets",
+    "abstract": "Neural network optimization takes place in highly non-convex, high-dimensional parameter spaces. We introduce filter normalization techniques to visualize two-dimensional slices of the loss landscape without scale distortion artifacts. Our visualizations reveal how skip connections prevent landscape chaotic transitions and promote wide, convex-like optimization basins.",
+    "category": "cs.LG",
+    "authors": "H. Li, Z. Xu, G. Taylor, C. Studer, T. Goldstein",
+    "year": 2017
+  },
+  {
+    "id": "arxiv:1901.09321",
+    "title": "Fixup Initialization: Residual Learning Without Normalization",
+    "abstract": "Standard deep residual networks require explicit normalization layers (such as Batch Normalization) to prevent gradient explosion at initialization. We demonstrate that carefully scaling the initialization of residual branch weights by the network depth allows stable training of 10,000-layer deep networks without any normalization layers, uncovering the mathematical dynamics of residual propagation.",
+    "category": "cs.LG",
+    "authors": "H. Zhang, Y. N. Dauphin, T. Ma",
+    "year": 2019
+  },
+  {
+    "id": "arxiv:2003.00307",
+    "title": "Deep Double Descent: Where Bigger Models and More Data Hurt",
+    "abstract": "We demonstrate that the double descent phenomenon extends beyond model size to training epochs and dataset sizes across deep convolutional networks and Transformers. In the critical regime near the interpolation boundary, increasing model capacity or training time can paradoxically impair test performance before generalization improves in the overparameterized regime.",
+    "category": "cs.LG",
+    "authors": "P. Nakkiran, G. Kaplun, Y. Bansal, T. Yang, B. Barak, I. Sutskever",
+    "year": 2020
+  },
+  {
+    "id": "arxiv:1107.2490",
+    "title": "Stochastic Gradient Descent Tricks for Large-Scale Machine Learning",
+    "abstract": "Stochastic gradient descent (SGD) has become the core optimization engine for large-scale statistical learning and empirical risk minimization. We present theoretical convergence rates for convex and non-convex objectives, detailing learning rate annealing schedules, averaging strategies (Polyak-Ruppert averaging), and numerical stability guidelines for high-dimensional empirical risk optimization.",
+    "category": "stat.ML",
+    "authors": "L. Bottou",
+    "year": 2010
+  },
+  {
+    "id": "arxiv:0903.2790",
+    "title": "A Fast Iterative Shrinkage-Thresholding Algorithm for Linear Inverse Problems",
+    "abstract": "We consider the minimization of the sum of a smooth convex function and a non-smooth convex regularizer, such as the L1 norm in Lasso regression. We propose FISTA, an accelerated proximal gradient method that incorporates Nesterov momentum to achieve an optimal global convergence rate of O(1/k^2), significantly outperforming classical iterative shrinkage-thresholding approaches in sparse high-dimensional recovery.",
+    "category": "stat.ML",
+    "authors": "A. Beck, M. Teboulle",
+    "year": 2009
+  },
+  {
+    "id": "arxiv:1901.05353",
+    "title": "A Primer on PAC-Bayesian Learning",
+    "abstract": "PAC-Bayesian theory combines the flexibility of Bayesian modeling with the rigorous statistical guarantees of Probably Approximately Correct (PAC) learning. We provide a comprehensive mathematical treatment of PAC-Bayes bounds, deriving empirical generalization bounds on stochastic predictors and showing how Kullback-Leibler divergence between posterior and prior distributions controls statistical over-fitting.",
+    "category": "stat.ML",
+    "authors": "B. Guedj",
+    "year": 2019
+  },
+  {
+    "id": "arxiv:1608.04471",
+    "title": "Stein Variational Gradient Descent: A General Purpose Bayesian Inference Algorithm",
+    "abstract": "We propose Stein Variational Gradient Descent (SVGD), a deterministic particle optimization algorithm for Bayesian posterior inference. SVGD drives a set of particles along smooth trajectories minimizing the Kullback-Leibler divergence with the target distribution. The update rule balances attractive score forces with a repulsive kernel force that prevents particle collapse.",
+    "category": "stat.ML",
+    "authors": "Q. Liu, D. Wang",
+    "year": 2016
+  },
+  {
+    "id": "arxiv:1803.00567",
+    "title": "Computational Optimal Transport: With Applications to Data Science",
+    "abstract": "Optimal transport provides a geometric framework to compare probability measures by lifting ground metrics on metric spaces to Wasserstein spaces. We survey computational optimal transport, emphasizing entropic regularization and the Sinkhorn matrix scaling algorithm, which enables differentiable and scalable computation of Wasserstein distances in statistical learning and distribution alignment.",
+    "category": "stat.ML",
+    "authors": "G. Peyr\u00e9, M. Cuturi",
+    "year": 2019
+  },
+  {
+    "id": "arxiv:1607.00133",
+    "title": "Deep Learning with Differential Privacy",
+    "abstract": "Machine learning models trained on sensitive data can unintentionally memorize private user records. We develop Differentially Private Stochastic Gradient Descent (DP-SGD) that computes per-sample gradient norms, clips sensitivity, and injects calibrated Gaussian noise. We establish strict privacy accounting using the Moments Accountant framework.",
+    "category": "stat.ML",
+    "authors": "M. Abadi, A. Chu, I. Goodfellow, H. B. McMahan et al.",
+    "year": 2016
+  },
+  {
+    "id": "arxiv:1301.2681",
+    "title": "Frank-Wolfe Optimization for Convex Objectives with Polyhedral Constraints",
+    "abstract": "The Frank-Wolfe (conditional gradient) algorithm is a projection-free first-order optimization method for constrained convex problems. At each iteration, it minimizes a linear approximation of the objective over the constraint domain. We prove global sublinear convergence rates and establish that iterates remain sparse convex combinations of extreme points.",
+    "category": "stat.ML",
+    "authors": "M. Jaggi",
+    "year": 2013
+  },
+  {
+    "id": "arxiv:1107.0274",
+    "title": "Minimax Optimal Rates of Estimation in High-Dimensional Linear Regression",
+    "abstract": "We establish minimax lower and upper bounds for high-dimensional sparse linear regression where the ambient dimension exceeds the sample size. Under restricted eigenvalue conditions on design covariance matrices, we prove that the Lasso attains the exact minimax rate of estimation scaling with the sparsity level and logarithmic dimension factors.",
+    "category": "stat.ML",
+    "authors": "G. Raskutti, M. J. Wainwright, B. Yu",
+    "year": 2011
+  },
+  {
+    "id": "arxiv:1610.05755",
+    "title": "Robust Optimization for Machine Learning Under Distributional Shifts",
+    "abstract": "Standard statistical learning assumes identical training and testing distributions, rendering models vulnerable to covariate shifts. We formulate distributionally robust optimization using Wasserstein metric balls around the empirical distribution. The robust dual formulation yields regularized surrogate loss functions that guarantee worst-case risk bounds under data shifts.",
+    "category": "stat.ML",
+    "authors": "J. C. Duchi, H. Namkoong",
+    "year": 2018
+  },
+  {
+    "id": "arxiv:1711.05597",
+    "title": "Variational Inference: A Review for Statisticians",
+    "abstract": "Variational inference approximates intractable posterior probability densities through optimization rather than Markov chain Monte Carlo (MCMC) sampling. We review coordinate ascent variational inference (CAVI) and stochastic variational inference (SVI), demonstrating how optimizing the evidence lower bound scales Bayesian statistical modeling to massive data regimes.",
+    "category": "stat.ML",
+    "authors": "D. M. Blei, A. Kucukelbir, J. D. McAuliffe",
+    "year": 2017
+  },
+  {
+    "id": "arxiv:2107.07511",
+    "title": "A Gentle Introduction to Conformal Prediction and Distribution-Free Uncertainty",
+    "abstract": "Conformal prediction provides a mathematically rigorous methodology to output prediction sets with guaranteed finite-sample coverage without making distributional assumptions beyond exchangeability. We present an introductory guide to split conformal prediction, non-conformity scores, and adaptivity in classification and regression uncertainty quantification.",
+    "category": "stat.ML",
+    "authors": "A. N. Angelopoulos, S. Bates",
+    "year": 2021
+  },
+  {
+    "id": "arxiv:math/0603708",
+    "title": "Kernel Ridge Regression: Optimal Dimension-Free Convergence Rates",
+    "abstract": "We establish the statistical convergence rates of Kernel Ridge Regression within reproducing kernel Hilbert spaces (RKHS). By analyzing the decay of eigenvalues of integral operators associated with kernel covariance, we prove that regularization parameters attain the optimal minimax rates of estimation under source condition assumptions without dimension dependence.",
+    "category": "stat.ML",
+    "authors": "A. Caponnetto, E. De Vito",
+    "year": 2007
+  },
+  {
+    "id": "arxiv:1003.0728",
+    "title": "Learnability, Stability and Uniform Convergence in Statistical Learning Theory",
+    "abstract": "We investigate fundamental equivalences in statistical learning theory: under which conditions are learning problems learnable? We prove that algorithmic stability characterizes learnability for general loss functions, and show when uniform convergence bounds and empirical risk minimization are both necessary and sufficient for generalization.",
+    "category": "stat.ML",
+    "authors": "S. Shalev-Shwartz, O. Shamir, N. Srebro, K. Sridharan",
+    "year": 2010
+  },
+  {
+    "id": "arxiv:1712.07897",
+    "title": "Non-Convex Optimization for Machine Learning: Algorithms and Theory",
+    "abstract": "While convex optimization provides rigorous global optimality guarantees, many modern machine learning problems are inherently non-convex. We present algorithmic frameworks\u2014including projected gradient descent, alternating minimization, and matrix factorization\u2014that provide provable global convergence guarantees under structural conditions like strict saddle properties.",
+    "category": "stat.ML",
+    "authors": "P. Jain, P. Kar",
+    "year": 2017
+  },
+  {
+    "id": "arxiv:1111.4429",
+    "title": "Asymptotic Analysis of M-Estimators in High Dimensions",
+    "abstract": "We study the asymptotic behavior of regularized linear regression and M-estimators when the number of features p and sample size n both grow to infinity with their ratio p/n tending to a constant. Using random matrix theory and leave-one-out techniques, we characterize exact asymptotic risk curves and bias-variance decompositions.",
+    "category": "stat.ML",
+    "authors": "N. El Karoui, D. Bean, P. J. Bickel, C. Lim, B. Yu",
+    "year": 2013
+  },
+  {
+    "id": "arxiv:1405.0099",
+    "title": "Accelerated Methods for Non-Convex Optimization and Stochastic Search",
+    "abstract": "Accelerated gradient techniques, originating with Nesterov, achieve optimal iteration complexity on convex objectives. This paper examines extensions of acceleration to non-convex objectives and stochastic optimization. We establish convergence to approximate stationary points, quantifying how momentum balances gradient descent steps against local curvature.",
+    "category": "stat.ML",
+    "authors": "S. Ghadimi, G. Lan",
+    "year": 2016
+  }
+]
