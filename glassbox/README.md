@@ -21,10 +21,21 @@ pip install -r glassbox/requirements.txt
 ```
 
 ### Launch Interactive Teaching Lab
+> [!NOTE]
+> If Windows Application Control / AppLocker blocks `streamlit.exe`, invoke Streamlit directly through `python -m streamlit`:
+
 ```powershell
+# Set PYTHONPATH and launch via Python module
+cd D:\sem5\ML\project
 $env:PYTHONPATH = "D:\sem5\ML\project"
-streamlit run glassbox/app.py
+python -m streamlit run glassbox/app.py
 ```
+
+Alternatively, you can run the helper script:
+```powershell
+.\run_app.ps1
+```
+or double-click `run_app.bat`.
 
 ### Run Mathematical Verification Test Suite (15 Unit Tests)
 ```powershell

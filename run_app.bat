@@ -1,0 +1,4 @@
+@echo off
+set PYTHONPATH=%~dp0
+python -m streamlit run "%~dp0glassbox\app.py"
+pause
