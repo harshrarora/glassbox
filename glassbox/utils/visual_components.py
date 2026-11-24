@@ -15,14 +15,14 @@ from typing import List, Dict, Any, Optional
 
 
 def render_stepper_bar(current_stage: int) -> None:
-    """Renders the top horizontal pipeline stepper."""
+    """Renders the top horizontal pipeline stepper without duplicate numbering."""
     stages = [
-        (1, "1. Raw Corpus Hub"),
-        (2, "2. Preprocessing Lab"),
-        (3, "3. Vectorization"),
-        (4, "4. Dimensionality Reduction"),
-        (5, "5. Classifier Arena"),
-        (6, "6. Model MRI"),
+        (1, "Raw Corpus Hub"),
+        (2, "Preprocessing Lab"),
+        (3, "Vectorization"),
+        (4, "Reduction & Clusters"),
+        (5, "Classifier Arena"),
+        (6, "Model MRI"),
     ]
 
     cols = st.columns(len(stages))
@@ -34,7 +34,7 @@ def render_stepper_bar(current_stage: int) -> None:
             bg_color = "#2563eb" if is_active else ("#10b981" if is_past else "#f1f5f9")
             text_color = "#ffffff" if (is_active or is_past) else "#64748b"
             border = "2px solid #1d4ed8" if is_active else ("1px solid #059669" if is_past else "1px solid #cbd5e1")
-            icon = "🎯" if is_active else ("✓" if is_past else f"{stage_num}")
+            icon = "🎯" if is_active else ("✓" if is_past else f"{stage_num}.")
 
             st.markdown(
                 f"""

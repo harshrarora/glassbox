@@ -87,7 +87,7 @@ def render_stage3():
         labels=dict(x="Vocabulary Feature", y="Document", color=matrix_mode),
         color_continuous_scale=color_scale,
         aspect="auto",
-        title=f"Sample Heatmap ({matrix_mode}) — Non-zero informative coordinates",
+        title=f"Sample Heatmap ({matrix_mode}) : Non-zero informative coordinates",
     )
     fig_heat.update_layout(height=340, margin=dict(l=30, r=20, b=30, t=40))
     st.plotly_chart(fig_heat, use_container_width=True)

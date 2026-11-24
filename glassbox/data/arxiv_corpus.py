@@ -406,7 +406,7 @@ ARXIV_PAPERS: List[PaperRecord] = [
         id="arxiv:2201.11903",
         title="Chain-of-Thought Prompting Elicits Reasoning in Large Language Models",
         abstract=(
-            "We explore how generating a series of intermediate reasoning steps—a chain of thought—substantially enhances the ability of "
+            "We explore how generating a series of intermediate reasoning steps (a chain of thought) substantially enhances the ability of "
             "large language models to perform complex reasoning. Chain-of-thought prompting elicits emergent mathematical and symbolic reasoning "
             "capabilities on challenging arithmetic, common-sense, and symbolic manipulation benchmarks."
         ),
@@ -556,7 +556,7 @@ ARXIV_PAPERS: List[PaperRecord] = [
         abstract=(
             "We analyze gradient descent on linearly separable classification problems with unregularized logistic loss. "
             "Although the loss asymptotically approaches zero as weights grow to infinity, the normalized weight vector converges strictly "
-            "to the maximum-margin direction—the exact solution of hard-margin Support Vector Machines—revealing an implicit geometric inductive bias."
+            "to the maximum-margin direction (the exact solution of hard-margin Support Vector Machines), revealing an implicit geometric inductive bias."
         ),
         category="cs.LG",
         authors="D. Soudry, E. Hoffer, M. S. Nacson, S. Gunasekar, N. Srebro",
@@ -787,7 +787,7 @@ ARXIV_PAPERS: List[PaperRecord] = [
         title="Non-Convex Optimization for Machine Learning: Algorithms and Theory",
         abstract=(
             "While convex optimization provides rigorous global optimality guarantees, many modern machine learning problems are inherently non-convex. "
-            "We present algorithmic frameworks—including projected gradient descent, alternating minimization, and matrix factorization—that provide "
+            "We present algorithmic frameworks, including projected gradient descent, alternating minimization, and matrix factorization, that provide "
             "provable global convergence guarantees under structural conditions like strict saddle properties."
         ),
         category="stat.ML",
