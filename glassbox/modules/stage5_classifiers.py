@@ -397,23 +397,52 @@ def render_stage5():
     # -------------------------------------------------------------------------
     st.markdown("---")
     st.markdown("### 📊 Rigorous Model Evaluation & Error Diagnostics Suite")
-    st.caption("Comprehensive empirical evaluation from scratch: 4x4 Confusion Matrix, Per-Class Precision/Recall/Macro-F1, and Bias-Variance Overfitting Curve.")
+    st.caption("Comprehensive empirical evaluation: 4x4 Confusion Matrix with Train/Test splitting, Per-Class Precision/Recall/Macro-F1, and Data Leakage vs. Overfitting analysis.")
 
     class_list = ["cs.CV", "cs.CL", "cs.LG", "stat.ML"]
     y_true_indices = np.array([class_list.index(c) for c in categories])
 
-    mlp_full = SimpleMLP(hidden_dim=4, num_classes=4).fit(X_2d, y_true_indices, epochs=160, lr=0.08)
-    preds_indices = mlp_full.predict(X_2d)
-    preds_categories = [class_list[i] for i in preds_indices]
-
-    eval_results = compute_confusion_matrix_and_metrics(categories, preds_categories, class_list)
-
     tab_eval_cm, tab_eval_curve = st.tabs([
         "🎯 Confusion Matrix & Failure Inspector",
-        "📈 Bias-Variance / Overfitting Curve (Decision Tree Depth)",
+        "📈 Bias-Variance / Overfitting Curve & Data Leakage Lab",
     ])
 
+    from sklearn.model_selection import train_test_split
+    idx_all = np.arange(len(categories))
+    idx_train, idx_test = train_test_split(idx_all, test_size=0.30, random_state=42, stratify=categories)
+
+    mlp_eval = SimpleMLP(hidden_dim=4, num_classes=4).fit(X_2d[idx_train], y_true_indices[idx_train], epochs=180, lr=0.08)
+    train_acc = float(np.mean(mlp_eval.predict(X_2d[idx_train]) == y_true_indices[idx_train]))
+    test_acc = float(np.mean(mlp_eval.predict(X_2d[idx_test]) == y_true_indices[idx_test]))
+
     with tab_eval_cm:
+        col_eval_choice, col_eval_metrics = st.columns([1.6, 1.4])
+        with col_eval_choice:
+            eval_split_mode = st.radio(
+                "Evaluation Split Mode (Scientific Rigor):",
+                options=["Held-Out Test Set (30% Unseen Data - Generalization)", "Full Dataset (Training Set Fit)"],
+                horizontal=True,
+            )
+        is_held_out = "Held-Out" in eval_split_mode
+
+        eval_indices = idx_test if is_held_out else idx_all
+        eval_cats = [categories[i] for i in eval_indices]
+        eval_preds_idx = mlp_eval.predict(X_2d[eval_indices])
+        eval_preds_cats = [class_list[i] for i in eval_preds_idx]
+        eval_results = compute_confusion_matrix_and_metrics(eval_cats, eval_preds_cats, class_list)
+
+        with col_eval_metrics:
+            st.markdown(
+                f"""
+                <div style="background:#f8fafc; border:1px solid #cbd5e1; border-radius:8px; padding:10px 14px; font-size:0.85rem; line-height:1.5;">
+                  <b>Model:</b> 2-Layer MLP (ReLU) | <b>Evaluated On:</b> {'Held-Out Test Set (n=20)' if is_held_out else 'Full Corpus (n=64)'}<br>
+                  <b>Training Accuracy:</b> <code>{train_acc*100:.1f}%</code> &nbsp;|&nbsp; 
+                  <b>Held-Out Test Accuracy:</b> <code>{test_acc*100:.1f}%</code>
+                </div>
+                """,
+                unsafe_allow_html=True,
+            )
+
         col_cm_plot, col_cm_report = st.columns([1.6, 1.4])
         with col_cm_plot:
             fig_cm = px.imshow(
@@ -423,7 +452,7 @@ def render_stage5():
                 color_continuous_scale="Blues",
                 text_auto=True,
                 labels=dict(x="Predicted Domain", y="Ground-Truth Domain"),
-                title=f"4×4 Confusion Matrix (Overall Accuracy: {eval_results['accuracy']*100:.1f}%)",
+                title=f"4×4 Confusion Matrix ({'Held-Out Test Set' if is_held_out else 'Full Corpus'} Accuracy: {eval_results['accuracy']*100:.1f}%)",
             )
             fig_cm.update_layout(height=340, margin=dict(l=20, r=20, b=20, t=35))
             st.plotly_chart(fig_cm, use_container_width=True)
@@ -445,26 +474,27 @@ def render_stage5():
                 "Precision": f"<b>{eval_results['macro_precision']*100:.1f}%</b>",
                 "Recall": f"<b>{eval_results['macro_recall']*100:.1f}%</b>",
                 "F1-Score": f"<b>{eval_results['macro_f1']*100:.1f}%</b>",
-                "Support": f"<b>{len(categories)}</b>",
+                "Support": f"<b>{len(eval_cats)}</b>",
             })
             st.write(pd.DataFrame(df_report_rows).to_html(escape=False, index=False), unsafe_allow_html=True)
 
         # Inspect Failure Feature
         st.markdown("#### 🔍 The 'Inspect Failure' Deep-Dive")
-        st.caption("Select any off-diagonal cell where the classifier was fooled. Inspect the exact scientific paper and its overlapping vocabulary.")
+        st.caption("Select any misclassified paper from the active evaluation split. Inspect the exact scientific paper and its overlapping vocabulary.")
 
         error_pairs = []
-        for i, true_cat in enumerate(categories):
-            pred_cat = preds_categories[i]
+        for local_idx, orig_i in enumerate(eval_indices):
+            true_cat = categories[orig_i]
+            pred_cat = eval_preds_cats[local_idx]
             if true_cat != pred_cat:
                 error_pairs.append({
-                    "paper": papers[i],
+                    "paper": papers[orig_i],
                     "true_cat": true_cat,
                     "pred_cat": pred_cat,
                 })
 
         if error_pairs:
-            err_options = [f"Paper #{i+1}: '{ep['paper'].title[:38]}...' (True: {ep['true_cat']} → Pred: {ep['pred_cat']})" for i, ep in enumerate(error_pairs)]
+            err_options = [f"Paper #{i+1}: '{ep['paper'].title[:38]}...' (True: {ep['true_cat']} -> Pred: {ep['pred_cat']})" for i, ep in enumerate(error_pairs)]
             chosen_err_idx = st.selectbox("Misclassified Abstracts:", options=list(range(len(error_pairs))), format_func=lambda i: err_options[i])
             active_err = error_pairs[chosen_err_idx]
             p_err = active_err["paper"]
@@ -485,38 +515,70 @@ def render_stage5():
                 unsafe_allow_html=True,
             )
         else:
-            st.success("🎉 All documents are correctly classified in the current projection space!")
+            st.success("🎉 All documents in this split are correctly classified by the model!")
 
     with tab_eval_curve:
-        st.markdown("#### 📉 The Bias-Variance Tradeoff: Decision Tree Max Depth Simulation")
-        st.caption("Vary max_depth from 1 to 15. Observe how training accuracy continues climbing to 100% while validation accuracy degrades once variance dominates.")
+        st.markdown("#### 📉 The Bias-Variance Tradeoff & Data Leakage Lab")
+        st.caption("Investigate Puzzle: 'The Suspiciously Good Classifier'. Compare an honest out-of-sample split against the common data leakage flaw of fitting dimensionality reduction on all data before splitting.")
 
-        depth_val = st.slider("Decision Tree max_depth:", min_value=1, max_value=15, value=4)
+        col_bv_depth, col_bv_leak = st.columns([1.5, 1.5])
+        with col_bv_depth:
+            depth_val = st.slider("Decision Tree max_depth:", min_value=1, max_value=15, value=4)
+        with col_bv_leak:
+            leakage_toggle = st.radio(
+                "Data Leakage Comparison:",
+                options=["Honest Independent Split (No Leakage)", "Leaked Reduction (Fitted on all data before splitting)"],
+                horizontal=True,
+            )
+        is_leaked = "Leaked" in leakage_toggle
 
-        bv_data = compute_bias_variance_curve(X_2d, np.array(categories), max_depth_range=list(range(1, 16)))
+        # Compute honest vs leaked projections
+        X_raw_3d = X_all[:, idx_terms]
+        X_tr_raw, X_te_raw = X_raw_3d[idx_train], X_raw_3d[idx_test]
+        y_tr_raw = [categories[i] for i in idx_train]
+        y_te_raw = [categories[i] for i in idx_test]
+
+        if not is_leaked:
+            # Fit LDA strictly on training data
+            lda_honest = LDASimulator.fit(X_tr_raw, y_tr_raw)
+            X_tr_proj = lda_honest.projected_2d
+            X_te_proj = LDASimulator.transform(X_te_raw, lda_honest)
+        else:
+            # Leaked: already projected using all data
+            X_tr_proj = X_2d[idx_train]
+            X_te_proj = X_2d[idx_test]
+
+        from sklearn.tree import DecisionTreeClassifier
+        depths = list(range(1, 16))
+        train_accs, test_accs = [], []
+        for d in depths:
+            dt = DecisionTreeClassifier(max_depth=d, random_state=42)
+            dt.fit(X_tr_proj, y_tr_raw)
+            train_accs.append(dt.score(X_tr_proj, y_tr_raw))
+            test_accs.append(dt.score(X_te_proj, y_te_raw))
 
         fig_bv = go.Figure()
         fig_bv.add_trace(go.Scatter(
-            x=bv_data["depths"],
-            y=[acc * 100 for acc in bv_data["train_acc"]],
+            x=depths,
+            y=[acc * 100 for acc in train_accs],
             mode="lines+markers",
             name="Training Accuracy",
             line=dict(color="#10b981", width=3),
             marker=dict(size=7),
         ))
         fig_bv.add_trace(go.Scatter(
-            x=bv_data["depths"],
-            y=[acc * 100 for acc in bv_data["test_acc"]],
+            x=depths,
+            y=[acc * 100 for acc in test_accs],
             mode="lines+markers",
-            name="Test / Validation Accuracy",
-            line=dict(color="#ef4444", width=3, dash="dash"),
+            name="Validation / Test Accuracy",
+            line=dict(color="#ef4444" if not is_leaked else "#f59e0b", width=3, dash="dash"),
             marker=dict(size=7),
         ))
 
-        fig_bv.add_vline(x=depth_val, line_width=2, line_dash="dot", line_color="#0f172a", annotation_text=f"Selected Depth: {depth_val}")
+        fig_bv.add_vline(x=depth_val, line_width=2, line_dash="dot", line_color="#0f172a", annotation_text=f"Depth: {depth_val}")
 
         fig_bv.update_layout(
-            title="Overfitting Curve: Training vs. Validation Accuracy Across Tree Depth",
+            title=f"Generalization Curve: {'⚠️ Leaked Reduction (Overly Optimistic)' if is_leaked else '✅ Honest Out-of-Sample Split'}",
             xaxis=dict(title="Tree Maximum Depth (max_depth)", dtick=1),
             yaxis=dict(title="Classification Accuracy (%)", range=[30, 105]),
             height=360,
@@ -525,8 +587,8 @@ def render_stage5():
         )
         st.plotly_chart(fig_bv, use_container_width=True)
 
-        curr_train = bv_data["train_acc"][depth_val - 1] * 100
-        curr_test = bv_data["test_acc"][depth_val - 1] * 100
+        curr_train = train_accs[depth_val - 1] * 100
+        curr_test = test_accs[depth_val - 1] * 100
         gap = curr_train - curr_test
 
         st.markdown(
@@ -534,13 +596,15 @@ def render_stage5():
             <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:8px; padding:12px; font-size:0.85rem;">
               <b>Operating Point:</b> <code>max_depth = {depth_val}</code> | 
               <b>Train Accuracy:</b> <code>{curr_train:.1f}%</code> | 
-              <b>Test Accuracy:</b> <code>{curr_test:.1f}%</code> | 
+              <b>Held-Out Test Accuracy:</b> <code>{curr_test:.1f}%</code> | 
               <b>Generalization Gap:</b> <code>{gap:.1f}%</code><br>
               {
                 "⚠️ <b>High Variance (Overfitting):</b> The tree is memorizing idiosyncratic noise in the training set." if gap > 20
                 else "⚠️ <b>High Bias (Underfitting):</b> The tree is too shallow to capture decision structure." if depth_val <= 2
                 else "✅ <b>Optimal Inductive Bias:</b> Healthy balance between bias and variance."
               }
+              <br><br>
+              <b>💡 Data Leakage Lesson:</b> {'When dimensionality reduction is fitted on the entire dataset beforehand, test instances are subtly influenced by training centroids and class labels during scatter calculation, inflating validation performance artificially. The Honest Split fits reduction exclusively on training data and projects test vectors out-of-sample.' if is_leaked else 'In this Honest Split mode, the LDA transformation matrix was fit strictly on the 44 training instances. The 20 held-out test papers were projected without ever exposing their labels, delivering true out-of-sample generalization metrics.'}
             </div>
             """,
             unsafe_allow_html=True,

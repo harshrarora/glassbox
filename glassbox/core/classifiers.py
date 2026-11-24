@@ -116,6 +116,17 @@ class LDASimulator:
             explained_ratio=explained_ratio,
         )
 
+    @staticmethod
+    def transform(X: np.ndarray, res: LDAResult) -> np.ndarray:
+        """Projects unseen data onto top discriminant directions without data leakage."""
+        k_proj = res.eigenvectors.shape[1]
+        k_use = min(2, k_proj, len(res.classes) - 1)
+        W_proj = res.eigenvectors[:, :k_use]
+        projected = (X - res.global_mean) @ W_proj
+        if k_use == 1:
+            return np.column_stack([projected, np.zeros(len(X))])
+        return projected
+
 
 @dataclass
 class SVMResult:

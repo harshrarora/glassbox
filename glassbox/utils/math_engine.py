@@ -331,28 +331,28 @@ def compute_naive_bayes_posteriors(
 
 
 # -----------------------------------------------------------------------------
-# 4. Model MRI: Empirical Influence Functions (Koh & Liang, ICML 2017)
+# 6. Model MRI Influence Functions (Koh & Liang, ICML 2017)
 # -----------------------------------------------------------------------------
-def compute_influence_functions_2d(
-    X_train: np.ndarray, y_train: np.ndarray, x_test: np.ndarray, y_test: int, l2_reg: float = 0.1
-) -> np.ndarray:
-    """Calculates Koh & Liang's empirical parameter influence on test loss:
-    I_up,loss(z_train, z_test) = - grad_theta(L_test)^T * H^{-1} * grad_theta(L_train)
+def fit_logistic_regression_2d(
+    X: np.ndarray,
+    y: np.ndarray,
+    l2_reg: float = 0.1,
+    max_iter: int = 30,
+) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
+    """Fits L2-regularized binary Logistic Regression via Newton-Raphson.
+    y in {-1, +1} or {0, 1}.
+    Returns: (theta, probs, Hessian) where theta has shape (dim,) with bias at end.
     """
-    n, p = X_train.shape
-    # Augment with bias term
-    X_aug = np.column_stack([X_train, np.ones(n)])
-    x_test_aug = np.append(x_test, 1.0)
+    n, p = X.shape
+    X_aug = np.column_stack([X, np.ones(n)])
     dim = p + 1
+    y_binary = (y == 1).astype(float)
 
-    # Fit small logistic regression via Newton-Raphson
     theta = np.zeros(dim)
-    for _ in range(15):
+    for _ in range(max_iter):
         logits = X_aug @ theta
         probs = 1.0 / (1.0 + np.exp(-np.clip(logits, -15, 15)))
-        # Gradient
-        grad = (1.0 / n) * (X_aug.T @ (probs - (y_train == 1).astype(float))) + l2_reg * theta
-        # Hessian
+        grad = (1.0 / n) * (X_aug.T @ (probs - y_binary)) + l2_reg * theta
         W = probs * (1.0 - probs)
         H = (1.0 / n) * (X_aug.T @ (W[:, np.newaxis] * X_aug)) + l2_reg * np.eye(dim)
         try:
@@ -363,22 +363,46 @@ def compute_influence_functions_2d(
         except np.linalg.LinAlgError:
             break
 
-    # Compute Hessian at optimal theta
     logits = X_aug @ theta
     probs = 1.0 / (1.0 + np.exp(-np.clip(logits, -15, 15)))
     W = probs * (1.0 - probs)
     H_opt = (1.0 / n) * (X_aug.T @ (W[:, np.newaxis] * X_aug)) + l2_reg * np.eye(dim)
+
+    return theta, probs, H_opt
+
+
+def compute_influence_functions_2d(
+    X_train: np.ndarray,
+    y_train: np.ndarray,
+    x_test: np.ndarray,
+    y_test: int,
+    l2_reg: float = 0.1,
+) -> Dict[str, Any]:
+    """Computes empirical influence functions under a 2D regularized Logistic Regression model.
+    Koh & Liang (ICML 2017):
+    I_up,loss(z_train, z_test) = - grad_theta(L_test)^T * H^{-1} * grad_theta(L_train)
+
+    Sign convention:
+    - Positive influence (I > 0): Upweighting z increases test loss -> removing z reduces test loss (Culprit/Adversarial).
+    - Negative influence (I < 0): Upweighting z reduces test loss -> removing z increases test loss (Helper/Supportive).
+    """
+    n, p = X_train.shape
+    X_aug = np.column_stack([X_train, np.ones(n)])
+    x_test_aug = np.append(x_test, 1.0)
+    theta, probs, H_opt = fit_logistic_regression_2d(X_train, y_train, l2_reg=l2_reg)
+
     H_inv = np.linalg.pinv(H_opt)
 
-    # Test sample gradient: grad L(z_test, theta)
-    test_prob = 1.0 / (1.0 + np.exp(-np.clip(theta @ x_test_aug, -15, 15)))
+    test_logit = float(theta @ x_test_aug)
+    test_prob = 1.0 / (1.0 + np.exp(-np.clip(test_logit, -15, 15)))
     test_target = 1.0 if y_test == 1 else 0.0
     grad_test = (test_prob - test_target) * x_test_aug
 
-    # Vector v = H^{-1} * grad_test
+    eps = 1e-12
+    test_loss = float(- (test_target * np.log(np.clip(test_prob, eps, 1 - eps)) + (1 - test_target) * np.log(np.clip(1 - test_prob, eps, 1 - eps))))
+
     v = H_inv @ grad_test
 
-    # Influence of each training sample i: - grad_train_i^T * v
     influences = np.zeros(n)
     for i in range(n):
         train_prob = probs[i]
@@ -386,7 +410,57 @@ def compute_influence_functions_2d(
         grad_train_i = (train_prob - train_target) * X_aug[i]
         influences[i] = -float(np.dot(v, grad_train_i))
 
-    return influences
+    return {
+        "theta": theta,
+        "test_prob": test_prob,
+        "test_loss": test_loss,
+        "influences": influences,
+    }
+
+
+def compute_retrained_counterfactual(
+    X_train: np.ndarray,
+    y_train: np.ndarray,
+    x_test: np.ndarray,
+    y_test: int,
+    drop_idx: int,
+    l2_reg: float = 0.1,
+) -> Dict[str, Any]:
+    """Evaluates the influence approximation by comparing the Taylor predicted loss change
+    against the actual retrained model loss change after dropping sample drop_idx.
+    """
+    orig_res = compute_influence_functions_2d(X_train, y_train, x_test, y_test, l2_reg=l2_reg)
+    inf_drop = orig_res["influences"][drop_idx]
+    n = len(X_train)
+
+    pred_delta_loss = - (1.0 / n) * inf_drop
+
+    cf_mask = np.ones(n, dtype=bool)
+    cf_mask[drop_idx] = False
+    X_cf = X_train[cf_mask]
+    y_cf = y_train[cf_mask]
+
+    theta_cf, _, _ = fit_logistic_regression_2d(X_cf, y_cf, l2_reg=l2_reg)
+    x_test_aug = np.append(x_test, 1.0)
+    test_logit_cf = float(theta_cf @ x_test_aug)
+    test_prob_cf = 1.0 / (1.0 + np.exp(-np.clip(test_logit_cf, -15, 15)))
+    test_target = 1.0 if y_test == 1 else 0.0
+
+    eps = 1e-12
+    test_loss_cf = float(- (test_target * np.log(np.clip(test_prob_cf, eps, 1 - eps)) + (1 - test_target) * np.log(np.clip(1 - test_prob_cf, eps, 1 - eps))))
+    actual_delta_loss = test_loss_cf - orig_res["test_loss"]
+
+    return {
+        "theta_orig": orig_res["theta"],
+        "theta_cf": theta_cf,
+        "test_loss_orig": orig_res["test_loss"],
+        "test_loss_cf": test_loss_cf,
+        "pred_delta_loss": pred_delta_loss,
+        "actual_delta_loss": actual_delta_loss,
+        "test_prob_orig": orig_res["test_prob"],
+        "test_prob_cf": test_prob_cf,
+        "inf_drop": inf_drop,
+    }
 
 
 # -----------------------------------------------------------------------------

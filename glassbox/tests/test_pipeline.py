@@ -19,6 +19,7 @@ from glassbox.utils.math_engine import (
     compute_decision_tree_split,
     compute_knn_neighbors,
     compute_influence_functions_2d,
+    compute_retrained_counterfactual,
     simulate_kmeans,
     compute_elbow_and_silhouette,
     compute_hac_linkage,
@@ -103,9 +104,16 @@ def test_influence_functions_2d():
     x_test = np.array([1.5, 0.5])
     y_test = 1
 
-    influences = compute_influence_functions_2d(X, y, x_test, y_test)
-    assert len(influences) == 20
-    assert not np.isnan(influences).any()
+    mri = compute_influence_functions_2d(X, y, x_test, y_test)
+    assert len(mri["influences"]) == 20
+    assert not np.isnan(mri["influences"]).any()
+    assert 0.0 <= mri["test_prob"] <= 1.0
+
+    # Test counterfactual retraining comparison
+    top_culprit = int(np.argmax(mri["influences"]))
+    cf = compute_retrained_counterfactual(X, y, x_test, y_test, drop_idx=top_culprit)
+    assert "actual_delta_loss" in cf
+    assert "pred_delta_loss" in cf
 
 
 def test_kmeans_simulation_and_elbow():
