@@ -35,7 +35,7 @@ def jacobi_eigenvalue_solver(
     """Symmetric Jacobi eigensolver for real symmetric matrices (specialized for 3x3 classroom use).
 
     Rotates away the largest off-diagonal element iteratively using Givens/Jacobi rotations
-    until max(|A_pq|) < tol.
+    until max(|A_pq|) / max(|A_initial|) < tol (scale-relative).
 
     Returns:
       eigenvalues: sorted in descending order (shape: (p,))
@@ -43,11 +43,17 @@ def jacobi_eigenvalue_solver(
       iterations: number of sweep iterations performed
     """
     A = np.array(A, dtype=np.float64, copy=True)
+    if A.ndim != 2 or A.shape[0] != A.shape[1] or not A.size or not np.isfinite(A).all():
+        raise ValueError("Matrix must be nonempty, finite and square.")
+    if not np.isfinite(tol) or tol <= 0 or max_iter < 1:
+        raise ValueError("Require positive tolerance and iteration budget.")
     p = A.shape[0]
-    if A.shape[0] != A.shape[1]:
-        raise ValueError("Matrix must be square.")
-    if not np.allclose(A, A.T, atol=1e-10):
+    scale = float(np.max(np.abs(A)))
+    if not np.allclose(A, A.T, atol=1e-12 * scale, rtol=0):
         raise ValueError("Matrix must be symmetric.")
+    # Relative stopping criterion is invariant to the units of covariance.
+    if scale > 0:
+        A /= scale
 
     V = np.eye(p, dtype=np.float64)
 
@@ -74,9 +80,9 @@ def jacobi_eigenvalue_solver(
         # tau = (Aqq - App) / (2 * Apq)
         tau = (Aqq - App) / (2.0 * Apq)
         if tau >= 0:
-            t = 1.0 / (tau + np.sqrt(1.0 + tau * tau))
+            t = 1.0 / (tau + np.hypot(1.0, tau))
         else:
-            t = -1.0 / (-tau + np.sqrt(1.0 + tau * tau))
+            t = -1.0 / (-tau + np.hypot(1.0, tau))
 
         c = 1.0 / np.sqrt(1.0 + t * t)
         s = t * c
@@ -95,13 +101,15 @@ def jacobi_eigenvalue_solver(
 
         iteration += 1
 
-    if iteration >= max_iter and max_val >= tol:
+    # The final allowed rotation may have converged. Inspect the updated matrix.
+    max_val = float(np.max(np.abs(A - np.diag(np.diag(A)))))
+    if max_val >= tol:
         raise JacobiConvergenceError(
             f"Jacobi eigensolver did not converge within {max_iter} iterations (max off-diagonal = {max_val:.2e} >= tol {tol:.2e})."
         )
 
     # Diagonal entries are the eigenvalues
-    eigenvalues = np.diag(A).copy()
+    eigenvalues = np.diag(A).copy() * scale
 
     # Sort eigenpairs by descending eigenvalue
     sort_indices = np.argsort(eigenvalues)[::-1]
@@ -114,9 +122,6 @@ def jacobi_eigenvalue_solver(
         max_component_idx = int(np.argmax(np.abs(sorted_eigenvectors[:, col])))
         if sorted_eigenvectors[max_component_idx, col] < 0:
             sorted_eigenvectors[:, col] *= -1.0
-
-    # Clean up very small numerical noise near zero
-    sorted_eigenvalues = np.where(np.abs(sorted_eigenvalues) < 1e-14, 0.0, sorted_eigenvalues)
 
     return sorted_eigenvalues, sorted_eigenvectors, iteration
 
@@ -227,9 +232,12 @@ def compute_svd_rank_k(X: np.ndarray, k: int) -> SVDRankKResult:
     """Compute exact full SVD and rank-k truncated reconstruction:
     X_hat_k = sum_{j=1}^k sigma_j * u_j * v_j^T
     """
+    X = np.asarray(X, dtype=float)
+    if X.ndim != 2 or not X.size or not np.isfinite(X).all():
+        raise ValueError("SVD requires a nonempty finite matrix.")
     n, p = X.shape
-    if k < 1 or k > p:
-        raise ValueError(f"Rank k must be between 1 and {p}, got {k}.")
+    if not isinstance(k, (int, np.integer)) or k < 1 or k > min(n, p):
+        raise ValueError(f"Rank k must be between 1 and {min(n, p)}, got {k}.")
 
     U, S, Vt = np.linalg.svd(X, full_matrices=False)
 

@@ -7,6 +7,7 @@ from glassbox.utils.design import chart
 COLORS = {"cs.CV":"#10b981", "cs.CL":"#6366f1", "cs.LG":"#f59e0b", "stat.ML":"#f43f5e"}
 
 def render_stage1():
+    st.caption("64 teaching summaries associated with research papers. Texts and metadata are not a verified arXiv benchmark.")
     papers=get_arxiv_corpus()
     lengths=[len(p.abstract.split()) for p in papers]
     a,b,c,d=st.columns(4)

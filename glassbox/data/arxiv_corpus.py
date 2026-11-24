@@ -4,7 +4,8 @@
 - cs.LG (Machine Learning / Deep Learning Theory)
 - stat.ML (Optimization & Statistical Learning)
 
-Each document is a structured scientific research record with ground truth category labels.
+Texts are teaching summaries, not verified verbatim source abstracts. Metadata
+has not been comprehensively verified; category labels are teaching assignments.
 """
 
 from dataclasses import dataclass

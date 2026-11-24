@@ -172,7 +172,7 @@ def render_influence():
         reg = st.select_slider("L2 regularization", options=[.01, .03, .1, .3, 1.], value=.1, key="influence_reg")
         data = mri_dataset(test_idx)
         base = compute_influence_functions_2d(data["X"], data["y"], data["x_test"], data["y_test"], reg)
-        choice = st.radio("Training paper to remove", ["Largest positive influence", "Most negative influence"], key="influence_remove")
+        choice = st.radio("Training paper to remove", ["Largest influence", "Smallest influence"], key="influence_remove")
         drop = int(np.argmax(base["influences"]) if choice.startswith("Largest") else np.argmin(base["influences"]))
         inf = float(base["influences"][drop])
         st.caption(f"Selected: {data['papers'][drop].title}. Upweighting influence: {inf:+.5f}.")

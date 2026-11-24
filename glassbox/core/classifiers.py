@@ -34,6 +34,11 @@ class LDASimulator:
 
     @staticmethod
     def fit(X: np.ndarray, y: List[str], reg_eps: float = 1e-4) -> LDAResult:
+        X = np.asarray(X, dtype=float)
+        if X.ndim != 2 or not X.size or len(y) != len(X) or not np.isfinite(X).all():
+            raise ValueError("LDA requires finite features and one label per row.")
+        if not np.isfinite(reg_eps) or reg_eps <= 0:
+            raise ValueError("LDA requires positive finite scatter regularization.")
         n, p = X.shape
         classes = sorted(list(set(y)))
         if len(classes) < 2:
@@ -150,6 +155,8 @@ class SVMResult:
     line_gutter_neg: np.ndarray
     sample_margins: np.ndarray    # functional margin y_i * (w^T x_i + b)
     sample_slacks: np.ndarray     # slack xi_i = max(0, 1 - y_i*(w^T x + b))
+    line_gutter_pos_x: np.ndarray
+    line_gutter_neg_x: np.ndarray
 
 
 class SVMSimulator:
@@ -167,7 +174,7 @@ class SVMSimulator:
         b = float(clf.intercept_[0])
         w_norm = float(np.linalg.norm(w))
 
-        margin_width = (2.0 / w_norm) if w_norm > 0 else 0.0
+        margin_width = (2.0 / w_norm) if w_norm > 1e-12 else float("nan")
         sv_indices = clf.support_.tolist()
 
         # Compute functional margins and slacks
@@ -188,15 +195,24 @@ class SVMSimulator:
         # gutter pos: w^T x + b = +1 => x2 = -(w1 * x1 + b - 1) / w2
         # gutter neg: w^T x + b = -1 => x2 = -(w1 * x1 + b + 1) / w2
         w1, w2 = w[0], w[1]
-        if abs(w2) > 1e-8:
+        if w_norm <= 1e-12:
+            # A constant decision function has no drawable separating line.
+            line_x = line_boundary = line_gutter_pos = line_gutter_neg = np.array([])
+            line_gutter_pos_x = line_gutter_neg_x = line_x
+        elif abs(w2) >= abs(w1):
             line_boundary = -(w1 * line_x + b) / w2
             line_gutter_pos = -(w1 * line_x + b - 1.0) / w2
             line_gutter_neg = -(w1 * line_x + b + 1.0) / w2
+            line_gutter_pos_x = line_gutter_neg_x = line_x
         else:
-            # Vertical line fallback
-            line_boundary = np.zeros_like(line_x)
-            line_gutter_pos = np.zeros_like(line_x)
-            line_gutter_neg = np.zeros_like(line_x)
+            # Parameterize by y when the boundary is vertical or nearly so.
+            y_min, y_max = X_2d[:, 1].min(), X_2d[:, 1].max()
+            padding = max(float(y_max - y_min) * .15, .1)
+            line_boundary = np.linspace(y_min - padding, y_max + padding, 100)
+            line_gutter_pos = line_gutter_neg = line_boundary
+            line_x = -(w2 * line_boundary + b) / w1
+            line_gutter_pos_x = (1 - w2 * line_boundary - b) / w1
+            line_gutter_neg_x = (-1 - w2 * line_boundary - b) / w1
 
         return SVMResult(
             w=w,
@@ -213,4 +229,6 @@ class SVMSimulator:
             line_gutter_neg=line_gutter_neg,
             sample_margins=func_margins,
             sample_slacks=slacks,
+            line_gutter_pos_x=line_gutter_pos_x,
+            line_gutter_neg_x=line_gutter_neg_x,
         )

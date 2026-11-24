@@ -96,3 +96,29 @@ def test_naive_bayes_reference_comparison():
     app.radio(key="compare_classifier").set_value("Multinomial Naive Bayes").run()
     assert not app.exception
     assert app.metric[2].value=="100%"
+
+
+@pytest.mark.parametrize("model", ["2. Tree splits", "3. KNN", "4. Naive Bayes", "5. Neural network"])
+def test_classifier_inspection_branches(model):
+    app = app_at(5)
+    next(r for r in app.radio if r.label == "Select Supervised Classifier to Inspect:").set_value(model).run()
+    assert not app.exception
+
+
+def test_clustering_makes_label_informed_coordinates_explicit():
+    app = app_at(4)
+    assert app.radio(key="cluster_representation").value == "PCA (no labels)"
+    app.radio(key="cluster_representation").set_value("LDA (uses domain labels)").run()
+    assert not app.exception
+    assert any("not independent evidence" in warning.value for warning in app.warning)
+    selector = next(r for r in app.radio if r.label == "Clustering Analysis Sub-Module:")
+    selector.set_value(selector.options[1]).run()
+    assert not app.exception
+
+
+def test_kmeans_live_reference_view():
+    app = app_at(4)
+    app.radio(key="lens_widget_4").set_value("Compare implementations").run()
+    app.radio(key="compare_geometry").set_value("K-means partition").run()
+    assert not app.exception
+    assert [m.label for m in app.metric] == ["Inertia difference", "Matched-center residual", "Adjusted Rand index"]

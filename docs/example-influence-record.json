@@ -1,0 +1,32 @@
+{
+  "schema_version": 1,
+  "experiment": "influence",
+  "prediction": null,
+  "parameters": {
+    "held_out_paper": "arxiv:1512.03385",
+    "removed_paper": "arxiv:1706.03762",
+    "l2_reg": 0.1,
+    "features": [
+      "image",
+      "language"
+    ],
+    "feature_scale": 10,
+    "representation": "train-only, frozen for removal"
+  },
+  "results": {
+    "influence": 0.962150320325015,
+    "predicted_delta": -0.031037107107258547,
+    "normalized_predicted_delta": -0.03019740889217191,
+    "actual_delta": -0.03025076537200211
+  },
+  "reflection": "",
+  "source_sha256": "87dce64f2ad51ad13b446610620a49c3813dcd3b91c14e1beef0424b2e9345bf",
+  "environment": {
+    "python": "3.12.10",
+    "morphology_backend": "NLTK Porter stemmer / WordNet noun lemmatizer",
+    "numpy": "2.5.1",
+    "scikit-learn": "1.9.1",
+    "streamlit": "1.67.0",
+    "plotly": "7.1.0"
+  }
+}

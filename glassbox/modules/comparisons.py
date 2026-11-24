@@ -7,13 +7,26 @@ from sklearn.decomposition import PCA
 from sklearn.model_selection import train_test_split
 from sklearn.naive_bayes import MultinomialNB
 from sklearn.neighbors import KNeighborsClassifier
+from sklearn.cluster import KMeans
+from sklearn.metrics import adjusted_rand_score
+from scipy.optimize import linear_sum_assignment
 
 from glassbox.data.arxiv_corpus import get_arxiv_corpus
 from glassbox.core.geometry import fit_pca_3d
 from glassbox.core.experiments import text_projection_split
 from glassbox.utils.pipeline import vectorizer, settings, coordinates, resolve_terms
 from glassbox.utils.design import chart, GREEN, RUST, BLUE
-from glassbox.utils.math_engine import compute_knn_neighbors, compute_naive_bayes_posteriors
+from glassbox.utils.math_engine import compute_knn_neighbors, compute_naive_bayes_posteriors, simulate_kmeans
+
+
+def compare_kmeans(X, k):
+    """Match starting centers; compare partitions independently of cluster names."""
+    scratch = simulate_kmeans(X, k=k, max_iter=100, random_state=42, tol=0.)
+    reference = KMeans(n_clusters=k, init=scratch["history"][0]["centroids"].copy(),
+                       n_init=1, max_iter=100, tol=0., algorithm="lloyd").fit(X)
+    cost = np.linalg.norm(scratch["final_centroids"][:, None] - reference.cluster_centers_[None], axis=2)
+    rows, cols = linear_sum_assignment(cost)
+    return scratch, reference, float(cost[rows, cols].max()), float(adjusted_rand_score(scratch["final_labels"], reference.labels_))
 
 
 def compare_tfidf(texts, config):
@@ -131,6 +144,25 @@ def render_comparison(stage):
         X = coordinates(vec, vec.transform(texts)[2], settings()["terms"])
         active_terms = resolve_terms(vec, settings()["terms"])
         result = fit_pca_3d(X, active_terms)
+        method = st.radio("Geometry reference", ["PCA eigensystem", "K-means partition"], horizontal=True, key="compare_geometry")
+        if method == "K-means partition":
+            k = st.slider("Clusters", 2, 6, 4, key="compare_clusters")
+            points = result.scores_2d
+            scratch, reference, center_error, agreement = compare_kmeans(points, k)
+            a, b, c = st.columns(3)
+            a.metric("Inertia difference", f"{abs(scratch['wcss']-reference.inertia_):.2e}")
+            b.metric("Matched-center residual", f"{center_error:.2e}")
+            c.metric("Adjusted Rand index", f"{agreement:.3f}")
+            fig = go.Figure(go.Scatter(x=points[:, 0], y=points[:, 1], mode="markers", name="PCA coordinates",
+                                      marker=dict(color=scratch["final_labels"], colorscale="Viridis", size=8)))
+            for centers, name, color, symbol in [(scratch["final_centroids"], "Scratch centers", BLUE, "circle-open"),
+                                                 (reference.cluster_centers_, "Reference centers", RUST, "x")]:
+                fig.add_trace(go.Scatter(x=centers[:, 0], y=centers[:, 1], mode="markers", name=name,
+                                        marker=dict(color=color, symbol=symbol, size=15, line_width=2)))
+            fig.update_layout(xaxis_title="PC1", yaxis_title="PC2")
+            chart(fig)
+            st.caption("Same PCA coordinates and initial centers; Lloyd updates, one start, 100-update budget, zero movement tolerance. Center matching uses optimal assignment; ARI ignores cluster names. Empty-cluster handling differs: scratch keeps the previous center, scikit-learn relocates it. A discrepancy is evidence to inspect.")
+            return
         reference = PCA(n_components=3, svd_solver="full").fit(X)
         P = result.eigenvectors[:, :2] @ result.eigenvectors[:, :2].T
         P_ref = reference.components_[:2].T @ reference.components_[:2]

@@ -99,7 +99,7 @@ def render_contraction_meter(contraction_stats: Dict[str, Any]) -> None:
         margin=dict(l=20, r=20, b=20, t=35),
         yaxis=dict(title="Unique Vocabulary Tokens"),
     )
-    st.plotly_chart(fig_bar, use_container_width=True, theme=None)
+    st.plotly_chart(fig_bar, width="stretch", theme=None)
 
 
 def render_living_diff_text(
@@ -114,17 +114,22 @@ def render_living_diff_text(
     and removed stopwords in amber/red tags.
     """
     import re
+    import html
 
-    # Tokenize words to inspect
-    tokens = re.findall(r"\b\w+\b|[^\w\s]|\s+", original_text)
+    # Match removed URLs and formulas as whole spans before splitting words.
+    segments = sorted(set(removed_regex), key=len, reverse=True) if show_regex_diff else []
+    pattern = "|".join(re.escape(s) for s in segments)
+    words = r"[a-zA-Z]+|[^a-zA-Z\s]|\s+" if show_regex_diff else r"\w+|[^\w\s]|\s+"
+    tokens = re.findall(f"{pattern}|{words}" if pattern else words, original_text)
     html_spans = []
 
     stopword_set = set(discarded_stopwords)
 
     for tok in tokens:
         clean_t = tok.lower().strip()
-        is_punct_or_sym = bool(re.match(r"[^a-zA-Z\s]", tok))
+        is_punct_or_sym = tok in segments or bool(re.match(r"[^a-zA-Z\s]", tok))
         is_stop = clean_t in stopword_set
+        tok = html.escape(tok)
 
         if show_regex_diff and is_punct_or_sym and tok.strip():
             html_spans.append(

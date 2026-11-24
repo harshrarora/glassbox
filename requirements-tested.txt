@@ -1,0 +1,10 @@
+# Direct dependency versions used for the final local validation (Python 3.12).
+# This is a tested-version snapshot, not a transitive dependency lock.
+numpy==2.5.1
+scipy==1.18.1
+scikit-learn==1.9.1
+streamlit==1.67.0
+plotly==7.1.0
+pandas==3.0.5
+matplotlib==3.11.2
+pytest==9.1.1

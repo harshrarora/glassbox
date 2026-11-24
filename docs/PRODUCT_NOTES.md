@@ -17,6 +17,7 @@ Failure spotlights use their own declared fixtures and frozen protocols so that 
 - TF-IDF: select a document and term, see the active cell highlighted, then inspect count, document frequency, IDF, vector norm and normalized coordinate with real numbers substituted.
 - TF-IDF comparison: same analyzer, vocabulary, smoothing and normalization for project and scikit-learn outputs.
 - PCA comparison: same active three term columns, sample covariance, eigenvalue residual and a sign-invariant projector comparison.
+- K-means comparison: same PCA coordinates and starting centers, measured inertia and optimally matched center residuals, plus label-independent partition agreement. Clustering defaults to PCA; supervised LDA is disclosed when selected.
 - Classifier comparison: scratch KNN and multinomial Bayes versus reference estimators on an identical held-out split. KNN distance ties can lead to different neighbor orderings.
 - Diagnosis: the same logistic objective produces the influence score, boundary and counterfactual. Classical and normalization-aware approximations are distinguished.
 

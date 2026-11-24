@@ -8,12 +8,18 @@ Follow scientific text through preprocessing, TF-IDF, geometric reduction, class
 
 Puzzles live inside the pipeline as optional failure spotlights. There are no mandatory answers, locked charts or quiz gates.
 
+**Final handover:** [Run, verify and demonstrate GlassBox](docs/HANDOVER.md) · [Scientific audit](docs/RELEASE_NOTES.md) · [Test results](docs/validation-results.xml)
+
+![Centered PCA and SVD playground with live energy and reconstruction diagnostics](docs/release-preview.jpg)
+
 ```powershell
 python -m pip install -r glassbox/requirements.txt
 python -m streamlit run glassbox/app.py
 ```
 
 Run from the repository root with Python 3.10+. No account, API key or dataset download is required. `run_app.ps1` and `run_app.bat` are Windows launchers.
+
+The final local validation used Python 3.12.10 and passed **89 tests**. For the tested direct dependency versions, install `requirements-tested.txt` in a Python 3.12 virtual environment. This snapshot is not a full transitive lock.
 
 ### One pipeline, several ways to look
 
@@ -22,7 +28,7 @@ Run from the repository root with Python 3.10+. No account, API key or dataset d
 | **1. Corpus** | Browse all 64 records; highlight a selected paper in the length distribution | Inspect text, metadata and corpus scope | |
 | **2. Preprocess** | Toggle cleaning, stopword removal and morphology | Living text differences, stem/lemma comparison and vocabulary contraction | |
 | **3. Vectorize** | Counts, TF-IDF, bigrams and a document-term heatmap | Select a cell; inspect substituted equations and code; compare against scikit-learn | The paper that fell without changing |
-| **4. Geometry** | PCA, SVD rank-k, Fisher LDA, K-means and HAC | Covariance/scatter matrices; compare Jacobi eigenvalues and projectors against PCA | The rotating answer |
+| **4. Geometry** | Centered PCA/SVD rank-k, Fisher LDA, K-means and HAC | Covariance/scatter matrices; PCA residuals and matched-start K-means comparison | The rotating answer |
 | **5. Classify** | SVM, tree splits, KNN, Bayes and neural activations | Separate evaluation view; scratch/reference KNN and multinomial Bayes comparisons | The suspiciously good classifier |
 | **6. Diagnose** | Inspect influence and remove a training example | Compare predicted and measured loss changes under the same logistic model | The explanation on trial |
 
@@ -54,7 +60,7 @@ flowchart LR
     B --> C[TF-IDF]
     C --> D[Geometry]
     D --> E[Classification]
-    E --> F[Diagnosis]
+    E -. separate controlled fixture .-> F[Diagnosis]
     B -. shared settings .-> D
     B -. shared settings .-> E
     C --> G[Coordinate microscope]
@@ -76,7 +82,7 @@ glassbox/
   core/geometry.py          Jacobi eigensolver, PCA and SVD reconstruction
   core/classifiers.py       LDA fit/transform and SVM reference wrapper
   modules/investigations.py Live failure spotlights within pipeline stages
-  modules/stage*.py         Supporting teaching notebooks
+  modules/stage*.py         Interactive stage renderers
   utils/math_engine.py      Logistic influence and other teaching arithmetic
   utils/design.py           Live experiment state, chart theme and record export
   utils/theme.css           Modern light theme and responsive pipeline navigation
@@ -108,6 +114,8 @@ glassbox/
 **Attribution.** MRI holds out the inspected paper before fitting TF-IDF, uses the fixed `image` and `language` coordinates scaled by 10, and freezes that representation during removal. All classifier fits use mean logistic loss with an L2 penalty on weights and intercept. The classical `-I/n` prediction and ordinary leave-one-out retraining use different data-loss normalization. The derivation drawer exposes that difference and a corrected first-order approximation. Neither approximation guarantees the sign of a finite removal.
 
 **Geometry.** The rotation experiment nearly ties the first two eigenvalues while separating them from the third. A small cross-plane perturbation allows the plane to move too. It compares axes modulo sign and planes through their orthogonal projectors.
+
+**Clustering.** The default coordinates are label-free PCA. Selecting LDA explicitly introduces domain labels into the representation. A measured silhouette peak is not proof of a true domain count. Scratch K-means retains empty centers; scikit-learn may relocate them. The live comparison uses shared initial centers and exposes discrepancies rather than hiding them.
 
 **Verification.** Numerical tolerances are scoped to individual tests. Passing selected checks does not prove all algorithms equivalent to reference libraries, nor guarantee machine precision on arbitrary inputs.
 

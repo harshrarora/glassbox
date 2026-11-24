@@ -47,7 +47,7 @@ def header(number, title, premise, concept):
 
 def chart(fig, height=430):
     fig.update_layout(template="glassbox", height=height)
-    st.plotly_chart(fig, use_container_width=True, theme=None,
+    st.plotly_chart(fig, width="stretch", theme=None,
                     config={"displaylogo": False, "displayModeBar": False, "scrollZoom": False})
 
 
@@ -68,6 +68,7 @@ def verdict(prediction, observation):
 
 
 def receipt(key, parameters, results):
+    from glassbox.utils.math_engine import MORPHOLOGY_BACKEND
     completed = set(st.session_state.get("completed", []))
     completed.add(key)
     st.session_state["completed"] = sorted(completed)
@@ -83,7 +84,7 @@ def receipt(key, parameters, results):
                "prediction": record["prediction"], "parameters": parameters,
                "results": results, "reflection": notes,
                "source_sha256": source_hash.hexdigest(),
-               "environment": {"python": platform.python_version(), **{
+               "environment": {"python": platform.python_version(), "morphology_backend": MORPHOLOGY_BACKEND, **{
                    name: version(name) for name in ["numpy", "scikit-learn", "streamlit", "plotly"]}}}
     st.download_button("Download experiment record", json.dumps(payload, indent=2),
                        file_name=f"glassbox-{key}.json", mime="application/json", key=f"{key}_download")

@@ -30,12 +30,6 @@ CATEGORY_COLORS = {
 
 
 def _render_stage4_playground():
-    render_hero_card(
-        stage_title="Stage 4: Linear Algebra & Dimensionality Reduction",
-        what_text="Compressing high-dimensional vocabulary spaces into printable 2D and 3D geometric coordinates using unsupervised PCA/SVD, supervised LDA, and unsupervised clustering.",
-        why_text="1,000+ sparse dimensions cannot be plotted or easily modeled. Unsupervised PCA captures global variance, supervised LDA contracts within-class scatter (S_W), and K-Means/HAC clustering discover latent structures without labels.",
-    )
-
     papers = get_arxiv_corpus()
     all_abstracts = [p.abstract for p in papers]
     categories = [p.category for p in papers]
@@ -54,9 +48,6 @@ def _render_stage4_playground():
     # TAB 1: PCA / SVD 3D Simulator
     # -------------------------------------------------------------------------
     with tab_pca_svd:
-        st.markdown("### 3D Geometric PCA & Truncated SVD Rank-k Snapping")
-        st.caption("Inspect paper vectors across 3 distinctive domain features. Toggle rank k to watch vectors snap to lower-dimensional subspaces.")
-
         col_terms, col_svd = st.columns([2.0, 1.5])
         with col_terms:
             triplet_presets = {
@@ -81,13 +72,15 @@ def _render_stage4_playground():
             st.warning("Absent after preprocessing (shown as zero columns): " + ", ".join(missing))
 
         pca_res = fit_pca_3d(X_3d, pca_terms)
-        svd_res = compute_svd_rank_k(X_3d, k=rank_k)
+        # Center before SVD so the snapping plane and displayed PCA axes agree.
+        svd_res = compute_svd_rank_k(pca_res.X_centered, k=rank_k)
+        st.caption("SVD acts on X − μ; reconstruction adds μ back. Rank 2 therefore lies on the same affine plane as the displayed PCA axes.")
 
         col_canvas, col_diag = st.columns([1.7, 1.3])
 
         with col_canvas:
             fig_3d = go.Figure()
-            pts_display = svd_res.X_reconstructed if rank_k < 3 else X_3d
+            pts_display = svd_res.X_reconstructed + pca_res.mean_vector if rank_k < 3 else X_3d
 
             for cat in ["cs.CV", "cs.CL", "cs.LG", "stat.ML"]:
                 mask = np.array([c == cat for c in categories])
@@ -155,17 +148,19 @@ def _render_stage4_playground():
                 height=480,
                 margin=dict(l=0, r=0, b=0, t=30),
             )
-            st.plotly_chart(fig_3d, use_container_width=True, theme=None)
+            st.plotly_chart(fig_3d, width="stretch", theme=None)
 
         with col_diag:
-            st.markdown("####  Scree Plot & Covariance Heatmap")
+            retained, residual = st.columns(2)
+            retained.metric("Energy retained", f"{svd_res.energy_captured:.1%}")
+            residual.metric("Residual ‖X − X̂‖F", f"{svd_res.frobenius_error:.6f}")
             # Scree Plot
             cum_var = np.cumsum(pca_res.explained_variance_ratio) * 100
             fig_scree = go.Figure()
             fig_scree.add_trace(go.Bar(x=["PC1", "PC2", "PC3"], y=pca_res.explained_variance_ratio * 100, name="Individual %", marker_color="#3b82f6"))
             fig_scree.add_trace(go.Scatter(x=["PC1", "PC2", "PC3"], y=cum_var, name="Cumulative %", line=dict(color="#f59e0b", width=3)))
             fig_scree.update_layout(title="Scree Plot: Explained Variance Ratio", height=230, margin=dict(l=20, r=20, b=20, t=35))
-            st.plotly_chart(fig_scree, use_container_width=True, theme=None)
+            st.plotly_chart(fig_scree, width="stretch", theme=None)
 
             # Covariance Matrix Heatmap
             fig_cov = px.imshow(
@@ -176,7 +171,7 @@ def _render_stage4_playground():
                 title="Sample Covariance Matrix Σ",
             )
             fig_cov.update_layout(height=210, margin=dict(l=20, r=20, b=20, t=35))
-            st.plotly_chart(fig_cov, use_container_width=True, theme=None)
+            st.plotly_chart(fig_cov, width="stretch", theme=None)
 
     # -------------------------------------------------------------------------
     # TAB 2: Multiclass LDA Simulator
@@ -197,7 +192,7 @@ def _render_stage4_playground():
                 title="Within-Class Scatter Matrix S_W = ∑_c ∑ (x - μ_c)(x - μ_c)ᵀ",
             )
             fig_sw.update_layout(height=260, margin=dict(l=20, r=20, b=20, t=35))
-            st.plotly_chart(fig_sw, use_container_width=True, theme=None)
+            st.plotly_chart(fig_sw, width="stretch", theme=None)
 
         with col_sb:
             fig_sb = px.imshow(
@@ -208,7 +203,7 @@ def _render_stage4_playground():
                 title="Between-Class Scatter Matrix S_B = ∑_c N_c (μ_c - μ)(μ_c - μ)ᵀ",
             )
             fig_sb.update_layout(height=260, margin=dict(l=20, r=20, b=20, t=35))
-            st.plotly_chart(fig_sb, use_container_width=True, theme=None)
+            st.plotly_chart(fig_sb, width="stretch", theme=None)
 
         # 2D Projection Comparison: PCA vs LDA
         col_lda_proj, col_pca_proj = st.columns(2)
@@ -225,7 +220,7 @@ def _render_stage4_playground():
                 height=380,
                 margin=dict(l=20, r=20, b=20, t=35),
             )
-            st.plotly_chart(fig_lda_2d, use_container_width=True, theme=None)
+            st.plotly_chart(fig_lda_2d, width="stretch", theme=None)
 
         with col_pca_proj:
             fig_pca_2d = go.Figure()
@@ -240,14 +235,14 @@ def _render_stage4_playground():
                 height=380,
                 margin=dict(l=20, r=20, b=20, t=35),
             )
-            st.plotly_chart(fig_pca_2d, use_container_width=True, theme=None)
+            st.plotly_chart(fig_pca_2d, width="stretch", theme=None)
 
     # -------------------------------------------------------------------------
     # TAB 3: Unsupervised Clustering & Dendrogram Explorer
     # -------------------------------------------------------------------------
     with tab_cluster:
         st.markdown("###  Unsupervised Clustering & Hierarchical Dendrogram Explorer")
-        st.caption("Discover natural cluster structure without ground-truth labels. Watch K-Means centroids migrate to convergence and inspect hierarchical tree linkages.")
+        st.caption("Watch centroid updates and hierarchical merges. The representation determines which distances the clustering algorithm sees.")
 
         cluster_subview = st.radio(
             "Clustering Analysis Sub-Module:",
@@ -255,7 +250,13 @@ def _render_stage4_playground():
             horizontal=True,
         )
 
-        pts_2d = lda_res.projected_2d
+        representation = st.radio("Coordinates to cluster", ["PCA (no labels)", "LDA (uses domain labels)"],
+                                  horizontal=True, key="cluster_representation")
+        pts_2d = pca_res.scores_2d if representation.startswith("PCA") else lda_res.projected_2d
+        if representation.startswith("LDA"):
+            st.warning("LDA has already used the domain labels. Clusters in this space are not independent evidence of unsupervised domain discovery.")
+        else:
+            st.caption("PCA and clustering do not use domain labels. Only three selected term coordinates enter this experiment.")
 
         if cluster_subview.startswith("1."):
             col_k_ctrl, col_iter_ctrl = st.columns([1.5, 2.0])
@@ -323,10 +324,10 @@ def _render_stage4_playground():
 
             col_km_plot, col_km_stats = st.columns([2.0, 1.2])
             with col_km_plot:
-                st.plotly_chart(fig_km, use_container_width=True, theme=None)
+                st.plotly_chart(fig_km, width="stretch", theme=None)
             with col_km_stats:
                 st.markdown("####  Centroid Metrics & Convergence")
-                status_txt = " Converged" if step_t >= max_step else f"⏳ Migrating (Step {step_t}/{max_step})"
+                status_txt = ("Converged" if res_km["converged"] else "Iteration limit reached") if step_t >= max_step else f"Migrating (Step {step_t}/{max_step})"
                 st.markdown(
                     f"""
                     <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:8px; padding:12px; margin-bottom:12px;">
@@ -385,8 +386,13 @@ def _render_stage4_playground():
                     height=350,
                     margin=dict(l=20, r=20, b=20, t=35),
                 )
-                st.plotly_chart(fig_elbow, use_container_width=True, theme=None)
-                st.info(" **Pedagogical Takeaway:** Notice the sharp inflection point (the 'Elbow') at **K = 4**, corresponding to our 4 distinct scientific domains (`cs.CV`, `cs.CL`, `cs.LG`, `stat.ML`). The silhouette coefficient reaches its peak here, demonstrating that the natural data manifold has 4 dominant clusters without needing supervisory labels.")
+                st.plotly_chart(fig_elbow, width="stretch", theme=None)
+                valid = [(k, s) for k, s in zip(elbow_data["k_values"], elbow_data["silhouettes"]) if np.isfinite(s)]
+                if valid:
+                    best_k, best_score = max(valid, key=lambda item: item[1])
+                    st.info(f"Highest measured silhouette in this sweep: K = {best_k} ({best_score:.3f}). This depends on the coordinates and initialization; it does not establish a true number of domains. Singleton samples contribute zero.")
+                else:
+                    st.info("Silhouette is undefined: a valid partition needs between 2 and n−1 occupied clusters.")
 
         else:
             st.markdown("####  Hierarchical Agglomerative Clustering (HAC) Tree")

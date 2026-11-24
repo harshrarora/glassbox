@@ -31,7 +31,7 @@ CATEGORY_COLORS = {
 def _render_stage5_playground(evaluation_only=False):
     render_hero_card(
         stage_title="Stage 5: The Supervised Classifier Arena",
-        what_text="Fitting and comparing foundational syllabus classifiers (SVM, Decision Trees, KNN, Naive Bayes, and a 2-Layer Neural Network MLP) alongside a rigorous evaluation suite.",
+        what_text="Move a boundary, place a query, or inspect an activation. Open Evaluation to measure performance on a held-out split.",
         why_text="Classifiers impose distinct inductive biases on data: SVM optimizes geometric margins, Decision Trees perform recursive orthogonal cuts, KNN estimates local density, Naive Bayes computes joint posteriors, and Neural Networks learn non-linear layer transformations.",
     )
 
@@ -50,6 +50,7 @@ def _render_stage5_playground(evaluation_only=False):
     X_2d = lda_res.projected_2d
 
     if not evaluation_only:
+        st.caption("Playground fits use the full teaching corpus. The geometric views use supervised LDA; displayed training accuracy is not a generalization estimate.")
         model_choice = st.radio(
             "Select Supervised Classifier to Inspect:",
             options=[
@@ -92,8 +93,8 @@ def _render_stage5_playground(evaluation_only=False):
                 fig_svm = go.Figure()
                 # Hyperplane and gutters
                 fig_svm.add_trace(go.Scatter(x=svm_res.line_x, y=svm_res.line_boundary, mode="lines", line=dict(color="#0f172a", width=3), name="wᵀx + b = 0"))
-                fig_svm.add_trace(go.Scatter(x=svm_res.line_x, y=svm_res.line_gutter_pos, mode="lines", line=dict(color="#10b981", width=2, dash="dash"), name="wᵀx + b = +1"))
-                fig_svm.add_trace(go.Scatter(x=svm_res.line_x, y=svm_res.line_gutter_neg, mode="lines", line=dict(color="#6366f1", width=2, dash="dash"), name="wᵀx + b = -1"))
+                fig_svm.add_trace(go.Scatter(x=svm_res.line_gutter_pos_x, y=svm_res.line_gutter_pos, mode="lines", line=dict(color="#10b981", width=2, dash="dash"), name="wᵀx + b = +1"))
+                fig_svm.add_trace(go.Scatter(x=svm_res.line_gutter_neg_x, y=svm_res.line_gutter_neg, mode="lines", line=dict(color="#6366f1", width=2, dash="dash"), name="wᵀx + b = -1"))
 
                 # Data points
                 for cat, label_val, color in [(cat_pos, 1, CATEGORY_COLORS[cat_pos]), (cat_neg, -1, CATEGORY_COLORS[cat_neg])]:
@@ -106,14 +107,15 @@ def _render_stage5_playground(evaluation_only=False):
 
                 y_span = np.max(X_sub[:, 1]) - np.min(X_sub[:, 1])
                 fig_svm.update_layout(
-                    title=f"SVM Margin (C={c_val:.2f}): Width γ = {svm_res.margin_width:.4f} | Accuracy = {svm_res.accuracy*100:.1f}%",
+                    title=f"SVM · C = {c_val:.2f} · training accuracy {svm_res.accuracy*100:.1f}%",
                     xaxis_title="Discriminant Feature 1",
                     yaxis_title="Discriminant Feature 2",
-                    yaxis=dict(range=[np.min(X_sub[:, 1]) - 0.4*y_span, np.max(X_sub[:, 1]) + 0.4*y_span]),
+                    xaxis=dict(range=list(svm_res.x1_range)),
+                    yaxis=dict(range=[np.min(X_sub[:, 1]) - 0.4*y_span, np.max(X_sub[:, 1]) + 0.4*y_span], scaleanchor="x", scaleratio=1),
                     height=420,
                     margin=dict(l=20, r=20, b=20, t=35),
                 )
-                st.plotly_chart(fig_svm, use_container_width=True, theme=None)
+                st.plotly_chart(fig_svm, width="stretch", theme=None)
 
             with col_info:
                 st.markdown(
@@ -138,7 +140,7 @@ def _render_stage5_playground(evaluation_only=False):
             st.markdown("###  Decision Tree Axis-Aligned Split Explorer")
             st.caption("Decision trees recursively partition feature space with orthogonal cuts. Move the threshold slider to see exact Gini Impurity and Information Gain.")
 
-            split_axis = st.radio("Partitioning Feature Axis:", options=["Feature 1 (Horizontal Split)", "Feature 2 (Vertical Split)"], horizontal=True)
+            split_axis = st.radio("Partitioning Feature Axis:", options=["Feature 1 (Vertical boundary)", "Feature 2 (Horizontal boundary)"], horizontal=True)
             feat_idx = 0 if "Feature 1" in split_axis else 1
 
             val_min, val_max = float(np.min(X_2d[:, feat_idx])), float(np.max(X_2d[:, feat_idx]))
@@ -160,7 +162,7 @@ def _render_stage5_playground(evaluation_only=False):
                     fig_dt.add_hline(y=thresh, line_width=3, line_dash="dash", line_color="#ef4444")
 
                 fig_dt.update_layout(title="Orthogonal Decision Cut across 4 Domains", height=420, margin=dict(l=20, r=20, b=20, t=35))
-                st.plotly_chart(fig_dt, use_container_width=True, theme=None)
+                st.plotly_chart(fig_dt, width="stretch", theme=None)
 
             with col_tree_math:
                 st.markdown(
@@ -220,8 +222,8 @@ def _render_stage5_playground(evaluation_only=False):
                 circle_y = q_y + knn_res["radius"] * np.sin(theta)
                 fig_knn.add_trace(go.Scatter(x=circle_x, y=circle_y, mode="lines", line=dict(color="#f59e0b", dash="dot"), name=f"Radius R={knn_res['radius']:.3f}"))
 
-                fig_knn.update_layout(title=f"KNN Prediction: {knn_res['prediction']}", height=420, margin=dict(l=20, r=20, b=20, t=35))
-                st.plotly_chart(fig_knn, use_container_width=True, theme=None)
+                fig_knn.update_layout(title=f"KNN Prediction: {knn_res['prediction']}", yaxis=dict(scaleanchor="x", scaleratio=1), height=420, margin=dict(l=20, r=20, b=20, t=35))
+                st.plotly_chart(fig_knn, width="stretch", theme=None)
 
             with col_knn_info:
                 st.markdown(
@@ -250,11 +252,13 @@ def _render_stage5_playground(evaluation_only=False):
             test_phrase = st.text_input("Enter a scientific query phrase:", value="convolutional neural network for image recognition")
 
             tokens_nb = [vec.vocabulary[t] for t in vec.tokenizer(test_phrase) if t in vec.vocabulary]
+            if not tokens_nb:
+                st.info("No query tokens match the vocabulary. The probabilities below are class priors; the tied prediction follows class ordering.")
             nb_res = compute_naive_bayes_posteriors(c_mat, np.array(categories), tokens_nb, sorted(list(set(categories))))
 
             st.markdown(f"**Predicted Category:** `{nb_res['predicted_class']}`")
             df_nb = pd.DataFrame([{"Category": c, "Posterior Probability P(C|D)": f"{p*100:.2f}%"} for c, p in nb_res["posterior_probs"].items()])
-            st.dataframe(df_nb, use_container_width=True)
+            st.dataframe(df_nb, width="stretch")
 
         # -------------------------------------------------------------------------
         # 5. Multi-Layer Perceptron (MLP)
@@ -368,7 +372,7 @@ def _render_stage5_playground(evaluation_only=False):
                     height=380,
                     margin=dict(l=20, r=20, b=20, t=35),
                 )
-                st.plotly_chart(fig_nn, use_container_width=True, theme=None)
+                st.plotly_chart(fig_nn, width="stretch", theme=None)
 
             with col_nn_math:
                 st.markdown("####  Step-by-Step Numerical Derivation")
@@ -400,7 +404,7 @@ def _render_stage5_playground(evaluation_only=False):
     # MODULE C: Rigorous Evaluation & Error Diagnostics Suite
     # -------------------------------------------------------------------------
     st.markdown("---")
-    st.markdown("###  Rigorous Model Evaluation & Error Diagnostics Suite")
+    st.markdown("### Held-out evaluation")
     st.caption("Comprehensive empirical evaluation: 4x4 Confusion Matrix with Train/Test splitting, Per-Class Precision/Recall/Macro-F1, and Data Leakage vs. Overfitting analysis.")
 
     class_list = ["cs.CV", "cs.CL", "cs.LG", "stat.ML"]
@@ -464,7 +468,7 @@ def _render_stage5_playground(evaluation_only=False):
                 title=f"Confusion matrix ({'Validation' if is_held_out else 'Training'} accuracy: {eval_results['accuracy']*100:.1f}%)",
             )
             fig_cm.update_layout(height=340, margin=dict(l=20, r=20, b=20, t=35))
-            st.plotly_chart(fig_cm, use_container_width=True, theme=None)
+            st.plotly_chart(fig_cm, width="stretch", theme=None)
 
         with col_cm_report:
             st.markdown("####  Scratch Classification Report HUD")
@@ -592,7 +596,7 @@ def _render_stage5_playground(evaluation_only=False):
             margin=dict(l=20, r=20, b=20, t=35),
             legend=dict(x=0.05, y=0.15),
         )
-        st.plotly_chart(fig_bv, use_container_width=True, theme=None)
+        st.plotly_chart(fig_bv, width="stretch", theme=None)
 
         curr_train = train_accs[depth_val - 1] * 100
         curr_test = test_accs[depth_val - 1] * 100

@@ -272,8 +272,10 @@ def compute_decision_tree_split(X_1d: np.ndarray, y: np.ndarray, threshold: floa
 
 def compute_knn_neighbors(X_train: np.ndarray, y_train: np.ndarray, query_point: np.ndarray, k: int) -> Dict[str, Any]:
     """Computes K-Nearest Neighbors, distances, and neighborhood majority vote."""
+    if not isinstance(k, (int, np.integer)) or not 1 <= k <= len(X_train):
+        raise ValueError("k must be between one and the training sample count")
     distances = np.linalg.norm(X_train - query_point, axis=1)
-    k_indices = np.argsort(distances)[:k]
+    k_indices = np.argsort(distances, kind="stable")[:k]
 
     k_distances = distances[k_indices]
     k_labels = y_train[k_indices]
@@ -504,12 +506,20 @@ def simulate_kmeans(
     k: int = 4,
     max_iter: int = 15,
     random_state: int = 42,
+    tol: float = 1e-4,
 ) -> Dict[str, Any]:
     """Simulates K-Means clustering step-by-step from first principles.
     Records the exact migration history of centroids and assignments at each iteration t.
     """
     rng = np.random.RandomState(random_state)
+    X = np.asarray(X, dtype=float)
+    if X.ndim != 2 or not len(X) or not np.isfinite(X).all():
+        raise ValueError("K-means requires a nonempty finite feature matrix")
     n_samples, n_features = X.shape
+    if not isinstance(k, (int, np.integer)) or not 1 <= k <= n_samples or max_iter < 1:
+        raise ValueError("Require 1 <= k <= number of samples and max_iter >= 1")
+    if not np.isfinite(tol) or tol < 0:
+        raise ValueError("Tolerance must be finite and nonnegative")
 
     init_indices = rng.choice(n_samples, size=k, replace=False)
     centroids = X[init_indices].copy()
@@ -539,7 +549,7 @@ def simulate_kmeans(
                 new_centroids[j] = centroids[j]
 
         shift = np.max(np.linalg.norm(new_centroids - centroids, axis=1))
-        if shift < 1e-4 and not converged:
+        if shift <= tol and not converged:
             converged = True
             converged_iter = t
 
@@ -547,11 +557,16 @@ def simulate_kmeans(
         if converged and t >= converged_iter + 1:
             break
 
-    if not converged:
-        converged_iter = len(history) - 1
+    # Report one coherent final state even when the iteration budget is exhausted.
+    dists = np.sum((X[:, None, :] - centroids[None, :, :]) ** 2, axis=2)
+    labels = np.argmin(dists, axis=1)
+    history.append({"iteration": len(history), "centroids": centroids.copy(),
+                    "labels": labels.copy(), "wcss": float(np.min(dists, axis=1).sum())})
+    converged_iter = len(history) - 1
 
     return {
         "history": history,
+        "converged": converged,
         "converged_iter": converged_iter,
         "final_centroids": centroids,
         "final_labels": history[-1]["labels"],
@@ -577,6 +592,11 @@ def compute_elbow_and_silhouette(
         wcss_list.append(res["wcss"])
         labels = res["final_labels"]
 
+        # Silhouette is undefined for one occupied cluster or all singletons.
+        occupied = np.unique(labels)
+        if not 2 <= len(occupied) < n_samples:
+            silhouette_list.append(float("nan"))
+            continue
         s_scores = np.zeros(n_samples)
         for i in range(n_samples):
             own_cluster = labels[i]
@@ -584,7 +604,8 @@ def compute_elbow_and_silhouette(
             if len(own_members) > 1:
                 a_i = float(np.mean(np.linalg.norm(own_members - X[i], axis=1)) * (len(own_members) / (len(own_members) - 1)))
             else:
-                a_i = 0.0
+                # The singleton convention is s(i)=0, not (b-0)/b=1.
+                continue
 
             b_i = float("inf")
             for other_c in range(k):
@@ -634,7 +655,7 @@ class SimpleMLP:
         self.b2 = np.zeros(num_classes)
 
     def fit(self, X: np.ndarray, y_indices: np.ndarray, epochs: int = 150, lr: float = 0.08, l2: float = 1e-4):
-        """Fits network on 2D coordinates via SGD with momentum."""
+        """Fits network via full-batch gradient descent with momentum."""
         n = len(X)
         Y_onehot = np.zeros((n, self.num_classes))
         for i, idx in enumerate(y_indices):
@@ -712,6 +733,10 @@ def compute_confusion_matrix_and_metrics(
 ) -> Dict[str, Any]:
     """Computes 4x4 Confusion Matrix, Per-Class Precision/Recall/F1, and Macro-F1 from pure NumPy."""
     n_classes = len(class_labels)
+    if len(y_true) != len(y_pred) or not class_labels or len(set(class_labels)) != n_classes:
+        raise ValueError("Require aligned predictions and unique, nonempty class labels")
+    if not set(y_true).union(y_pred).issubset(class_labels):
+        raise ValueError("All observed labels must be included in class_labels")
     label_to_idx = {l: i for i, l in enumerate(class_labels)}
 
     cm = np.zeros((n_classes, n_classes), dtype=int)
@@ -829,8 +854,9 @@ def verify_first_principles_vs_sklearn(
 
     # 2. PCA Eigenvalues Difference
     terms = ["image", "language", "optimization"]
-    idx_3d = [vec_scratch.vocabulary.get(t, 0) for t in terms]
-    X_3d = X_scratch[:, idx_3d]
+    X_3d = np.column_stack([X_scratch[:, vec_scratch.vocabulary[t]]
+                           if t in vec_scratch.vocabulary else np.zeros(len(corpus_texts))
+                           for t in terms])
     pca_scratch = fit_pca_3d(X_3d, terms)
     pca_sk = PCA(n_components=3).fit(X_3d)
     diff_eig = float(np.max(np.abs(pca_scratch.eigenvalues - pca_sk.explained_variance_)))

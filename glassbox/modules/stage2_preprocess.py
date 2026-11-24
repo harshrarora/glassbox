@@ -7,6 +7,7 @@ import streamlit as st
 import pandas as pd
 from typing import List, Dict, Any
 from glassbox.data.arxiv_corpus import get_arxiv_corpus
+from glassbox.core.vectorizer import default_tokenizer
 from glassbox.utils.visual_components import (
     render_hero_card,
     render_contraction_meter,
@@ -28,7 +29,7 @@ def render_stage2():
     render_hero_card(
         stage_title="Stage 2: The Preprocessing & Linguistics Lab",
         what_text="Progressively sanitizing raw text through regular expressions, tokenizing into discrete word chips, filtering uninformative stopwords, and resolving inflectional endings.",
-        why_text="Inflectional variations (e.g. 'run', 'running', 'runs') and syntactic glue words ('the', 'which') needlessly multiply matrix columns. Linguistic compression shrinks feature dimensionality while preserving core semantics.",
+        why_text="Preprocessing changes what a model can observe. Merging word forms reduces dimensions, but removing punctuation, numbers or stopwords can also erase meaning. Compare the retained tokens before choosing a representation.",
     )
 
     papers = get_arxiv_corpus()
@@ -60,7 +61,7 @@ def render_stage2():
     # Execute transformations on chosen text
     raw_text = chosen_paper.abstract
     cleaned_text, removed_regex = clean_regex_text(raw_text)
-    tokens = tokenize_text(cleaned_text if t_regex else raw_text)
+    tokens = default_tokenizer(cleaned_text if t_regex else raw_text)
     retained_tokens, discarded_stops = filter_stopwords(tokens)
 
     # 2. Living Visual Diff View
@@ -94,7 +95,7 @@ def render_stage2():
         with st.expander(f" Discarded Stopwords ({len(discarded_stops)} words removed from this abstract)"):
             stop_freq = pd.Series(discarded_stops).value_counts().reset_index()
             stop_freq.columns = ["Stopword", "Occurrences in Document"]
-            st.dataframe(stop_freq.T, use_container_width=True)
+            st.dataframe(stop_freq.T, width="stretch")
 
     # 4. The Stemming vs Lemmatization Battle (Side-by-Side Comparison)
     if t_morph:
@@ -126,7 +127,7 @@ def render_stage2():
                     diff_cases[["original", "stem", "lemma"]].rename(
                         columns={"original": "Original word", "stem": "Active stemmer", "lemma": "Active lemmatizer"}
                     ),
-                    use_container_width=True,
+                    width="stretch",
                     height=280,
                 )
             else:

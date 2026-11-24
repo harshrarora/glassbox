@@ -41,13 +41,13 @@ with brand:
 with context:
     st.caption("MACHINE LEARNING PLAYGROUND  /  manipulate · magnify · compare")
 with notes:
-    st.button("Methods & sources", on_click=toggle_methods, use_container_width=True)
+    st.button("Methods & sources", on_click=toggle_methods, width="stretch")
 
 with st.container(key="pipeline_navigation"):
     for index, column in enumerate(st.columns(6), 1):
         with column:
             st.button(f"{index:02d}  {STAGES[index-1]}", key=f"stage_{index}", on_click=navigate, args=(index,),
-                      type="primary" if st.session_state.current_stage == index else "secondary", use_container_width=True)
+                      type="primary" if st.session_state.current_stage == index else "secondary", width="stretch")
 
 cfg = settings()
 pipeline_summary = st.empty()
@@ -96,10 +96,10 @@ else:
     st.divider()
     prev, hint, nxt = st.columns([1, 3, 1])
     with prev:
-        st.button("← Previous", on_click=navigate, args=(max(1, current-1),), disabled=current == 1, use_container_width=True)
+        st.button("← Previous", on_click=navigate, args=(max(1, current-1),), disabled=current == 1, width="stretch")
     with hint:
         st.caption("Move freely. Charts respond immediately; explanations are optional.")
     with nxt:
-        st.button("Next →", on_click=navigate, args=(min(6, current+1),), disabled=current == 6, use_container_width=True)
+        st.button("Next →", on_click=navigate, args=(min(6, current+1),), disabled=current == 6, width="stretch")
 
 pipeline_summary.caption(f"64 teaching texts  ·  Regex {'on' if cfg['regex'] else 'off'}  ·  Stopwords {'removed' if cfg['stopwords'] else 'kept'}  ·  {cfg['morphology']} morphology  ·  {'Unigrams + bigrams' if cfg['bigrams'] else 'Unigrams'}")
