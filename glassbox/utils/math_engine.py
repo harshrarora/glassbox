@@ -16,11 +16,13 @@ import numpy as np
 
 # NLTK imports with robust pure-Python fallbacks
 try:
-    from nltk.corpus import stopwords as nltk_stopwords
+    from nltk.corpus import stopwords as nltk_stopwords, wordnet
     from nltk.stem import PorterStemmer, WordNetLemmatizer
     NLTK_STOPWORDS = set(nltk_stopwords.words("english"))
     STEMMER = PorterStemmer()
     LEMMATIZER = WordNetLemmatizer()
+    wordnet.ensure_loaded()
+    MORPHOLOGY_BACKEND = "NLTK Porter stemmer / WordNet noun lemmatizer"
 except Exception:
     NLTK_STOPWORDS = {
         "a", "about", "above", "after", "again", "against", "all", "am", "an", "and", "any", "are",
@@ -53,6 +55,7 @@ except Exception:
             return w
     STEMMER = FallbackStemmer()
     LEMMATIZER = FallbackLemmatizer()
+    MORPHOLOGY_BACKEND = "Simplified offline suffix rules / small lemma dictionary"
 
 
 # -----------------------------------------------------------------------------
@@ -337,35 +340,60 @@ def fit_logistic_regression_2d(
     X: np.ndarray,
     y: np.ndarray,
     l2_reg: float = 0.1,
-    max_iter: int = 30,
+    max_iter: int = 100,
+    sample_weights: Optional[np.ndarray] = None,
 ) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
-    """Fits L2-regularized binary Logistic Regression via Newton-Raphson.
-    y in {-1, +1} or {0, 1}.
+    """Damped Newton fit of mean logistic loss + lambda/2 * ||theta||^2.
+    y in {-1, +1} or {0, 1}. The intercept is regularized.
+    Optional weights multiply losses with the original 1/n denominator retained.
     Returns: (theta, probs, Hessian) where theta has shape (dim,) with bias at end.
     """
+    X = np.asarray(X, dtype=float)
+    y = np.asarray(y)
+    if X.ndim != 2 or len(X) == 0 or y.shape != (len(X),):
+        raise ValueError("Expected a nonempty feature matrix and one label per row")
+    if not np.isfinite(X).all() or not np.isin(y, [-1, 0, 1]).all():
+        raise ValueError("Features must be finite; binary labels must be -1/1 or 0/1")
+    if -1 in y and 0 in y:
+        raise ValueError("Do not mix -1/1 and 0/1 label encodings")
+    if not np.isfinite(l2_reg) or l2_reg <= 0:
+        raise ValueError("Positive finite regularization is required")
     n, p = X.shape
     X_aug = np.column_stack([X, np.ones(n)])
     dim = p + 1
     y_binary = (y == 1).astype(float)
 
+    weights = np.ones(n) if sample_weights is None else np.asarray(sample_weights, dtype=float)
+    if weights.shape != (n,) or not np.isfinite(weights).all() or np.any(weights < 0):
+        raise ValueError("Weights must be finite, nonnegative, and match the training rows")
+    def sigmoid(z):
+        return np.exp(-np.logaddexp(0., -z))
+    def objective(th):
+        z = X_aug @ th
+        return float(np.mean(weights * (np.logaddexp(0., z) - y_binary * z)) + .5 * l2_reg * (th @ th))
     theta = np.zeros(dim)
     for _ in range(max_iter):
         logits = X_aug @ theta
-        probs = 1.0 / (1.0 + np.exp(-np.clip(logits, -15, 15)))
-        grad = (1.0 / n) * (X_aug.T @ (probs - y_binary)) + l2_reg * theta
-        W = probs * (1.0 - probs)
+        probs = sigmoid(logits)
+        grad = (1.0 / n) * (X_aug.T @ (weights * (probs - y_binary))) + l2_reg * theta
+        W = weights * probs * (1.0 - probs)
         H = (1.0 / n) * (X_aug.T @ (W[:, np.newaxis] * X_aug)) + l2_reg * np.eye(dim)
-        try:
-            delta = np.linalg.solve(H, grad)
-            theta -= delta
-            if np.linalg.norm(delta) < 1e-6:
-                break
-        except np.linalg.LinAlgError:
+        if np.linalg.norm(grad, ord=np.inf) < 1e-12:
             break
+        delta = np.linalg.solve(H, grad)
+        step = 1.0
+        current = objective(theta)
+        while objective(theta - step * delta) > current - 1e-4 * step * float(grad @ delta) + 2e-15 * (1 + abs(current)):
+            step *= .5
+            if step < 1e-12:
+                raise RuntimeError("Logistic line search failed to find a descent step")
+        theta -= step * delta
+    else:
+        raise RuntimeError("Logistic fit did not converge")
 
     logits = X_aug @ theta
-    probs = 1.0 / (1.0 + np.exp(-np.clip(logits, -15, 15)))
-    W = probs * (1.0 - probs)
+    probs = sigmoid(logits)
+    W = weights * probs * (1.0 - probs)
     H_opt = (1.0 / n) * (X_aug.T @ (W[:, np.newaxis] * X_aug)) + l2_reg * np.eye(dim)
 
     return theta, probs, H_opt
@@ -383,25 +411,22 @@ def compute_influence_functions_2d(
     I_up,loss(z_train, z_test) = - grad_theta(L_test)^T * H^{-1} * grad_theta(L_train)
 
     Sign convention:
-    - Positive influence (I > 0): Upweighting z increases test loss -> removing z reduces test loss (Culprit/Adversarial).
-    - Negative influence (I < 0): Upweighting z reduces test loss -> removing z increases test loss (Helper/Supportive).
+    - Positive influence: infinitesimal upweighting increases test loss.
+    - Negative influence: infinitesimal upweighting reduces test loss.
+    A finite removal is an approximation, not a guaranteed sign of change.
     """
     n, p = X_train.shape
     X_aug = np.column_stack([X_train, np.ones(n)])
     x_test_aug = np.append(x_test, 1.0)
     theta, probs, H_opt = fit_logistic_regression_2d(X_train, y_train, l2_reg=l2_reg)
 
-    H_inv = np.linalg.pinv(H_opt)
-
     test_logit = float(theta @ x_test_aug)
-    test_prob = 1.0 / (1.0 + np.exp(-np.clip(test_logit, -15, 15)))
+    test_prob = float(np.exp(-np.logaddexp(0., -test_logit)))
     test_target = 1.0 if y_test == 1 else 0.0
     grad_test = (test_prob - test_target) * x_test_aug
 
-    eps = 1e-12
-    test_loss = float(- (test_target * np.log(np.clip(test_prob, eps, 1 - eps)) + (1 - test_target) * np.log(np.clip(1 - test_prob, eps, 1 - eps))))
-
-    v = H_inv @ grad_test
+    test_loss = float(np.logaddexp(0., test_logit) - test_target * test_logit)
+    v = np.linalg.solve(H_opt, grad_test)
 
     influences = np.zeros(n)
     for i in range(n):
@@ -415,6 +440,7 @@ def compute_influence_functions_2d(
         "test_prob": test_prob,
         "test_loss": test_loss,
         "influences": influences,
+        "inverse_hessian_test_gradient": v,
     }
 
 
@@ -429,11 +455,18 @@ def compute_retrained_counterfactual(
     """Evaluates the influence approximation by comparing the Taylor predicted loss change
     against the actual retrained model loss change after dropping sample drop_idx.
     """
+    if len(X_train) < 2 or not 0 <= drop_idx < len(X_train):
+        raise ValueError("Removal requires at least two rows and a valid training index")
     orig_res = compute_influence_functions_2d(X_train, y_train, x_test, y_test, l2_reg=l2_reg)
     inf_drop = orig_res["influences"][drop_idx]
     n = len(X_train)
 
     pred_delta_loss = - (1.0 / n) * inf_drop
+    # Actual LOO uses 1/(n-1), so the first-order perturbation includes the
+    # regularizer gradient via the original optimum's stationarity condition.
+    pred_delta_loss_normalized = float(
+        (-inf_drop + l2_reg * np.dot(orig_res["inverse_hessian_test_gradient"], orig_res["theta"])) / (n - 1)
+    )
 
     cf_mask = np.ones(n, dtype=bool)
     cf_mask[drop_idx] = False
@@ -443,11 +476,10 @@ def compute_retrained_counterfactual(
     theta_cf, _, _ = fit_logistic_regression_2d(X_cf, y_cf, l2_reg=l2_reg)
     x_test_aug = np.append(x_test, 1.0)
     test_logit_cf = float(theta_cf @ x_test_aug)
-    test_prob_cf = 1.0 / (1.0 + np.exp(-np.clip(test_logit_cf, -15, 15)))
+    test_prob_cf = float(np.exp(-np.logaddexp(0., -test_logit_cf)))
     test_target = 1.0 if y_test == 1 else 0.0
 
-    eps = 1e-12
-    test_loss_cf = float(- (test_target * np.log(np.clip(test_prob_cf, eps, 1 - eps)) + (1 - test_target) * np.log(np.clip(1 - test_prob_cf, eps, 1 - eps))))
+    test_loss_cf = float(np.logaddexp(0., test_logit_cf) - test_target * test_logit_cf)
     actual_delta_loss = test_loss_cf - orig_res["test_loss"]
 
     return {
@@ -456,6 +488,7 @@ def compute_retrained_counterfactual(
         "test_loss_orig": orig_res["test_loss"],
         "test_loss_cf": test_loss_cf,
         "pred_delta_loss": pred_delta_loss,
+        "pred_delta_loss_normalized": pred_delta_loss_normalized,
         "actual_delta_loss": actual_delta_loss,
         "test_prob_orig": orig_res["test_prob"],
         "test_prob_cf": test_prob_cf,

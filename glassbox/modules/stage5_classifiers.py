@@ -7,7 +7,7 @@ import numpy as np
 import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
-from glassbox.fixtures.arxiv_corpus import get_arxiv_corpus
+from glassbox.data.arxiv_corpus import get_arxiv_corpus
 from glassbox.utils.visual_components import render_hero_card
 from glassbox.core.classifiers import LDASimulator, SVMSimulator
 from glassbox.core.vectorizer import TextVectorizer
@@ -28,7 +28,7 @@ CATEGORY_COLORS = {
 }
 
 
-def render_stage5():
+def _render_stage5_playground(evaluation_only=False):
     render_hero_card(
         stage_title="Stage 5: The Supervised Classifier Arena",
         what_text="Fitting and comparing foundational syllabus classifiers (SVM, Decision Trees, KNN, Naive Bayes, and a 2-Layer Neural Network MLP) alongside a rigorous evaluation suite.",
@@ -39,395 +39,404 @@ def render_stage5():
     all_abstracts = [p.abstract for p in papers]
     categories = [p.category for p in papers]
 
-    vec = TextVectorizer().fit(all_abstracts)
+    from glassbox.utils.pipeline import vectorizer, coordinates
+    vec = vectorizer().fit(all_abstracts)
     _, _, X_all = vec.transform(all_abstracts)
 
     # Use 2D LDA projection for sharp geometric visualization
     terms = ["image", "language", "optimization"]
-    idx_terms = [vec.vocabulary.get(t, 0) for t in terms]
-    lda_res = LDASimulator.fit(X_all[:, idx_terms], categories)
+    X_features = coordinates(vec, X_all, terms)
+    lda_res = LDASimulator.fit(X_features, categories)
     X_2d = lda_res.projected_2d
 
-    model_choice = st.radio(
-        "Select Supervised Classifier to Inspect:",
-        options=[
-            "1. Support Vector Machine (SVM) Margin & Gutters",
-            "2. Decision Tree Axis-Aligned Split Explorer",
-            "3. K-Nearest Neighbors (KNN) Metric Ball",
-            "4. Naive Bayes Conditional Probability Inspector",
-            "5. Multi-Layer Perceptron (MLP) Forward & Activation Inspector",
-        ],
-        horizontal=True,
-    )
+    if not evaluation_only:
+        model_choice = st.radio(
+            "Select Supervised Classifier to Inspect:",
+            options=[
+                "1. SVM",
+                "2. Tree splits",
+                "3. KNN",
+                "4. Naive Bayes",
+                "5. Neural network",
+            ],
+            horizontal=True,
+        )
 
-    # -------------------------------------------------------------------------
-    # 1. Support Vector Machine
-    # -------------------------------------------------------------------------
-    if model_choice.startswith("1."):
-        st.markdown("### ⚔️ Support Vector Machine (SVM) Margin Explorer")
-        st.caption("Inspect the separating hyperplane and margin gutters. Adjust C to observe the soft vs. hard margin tradeoff.")
+        # -------------------------------------------------------------------------
+        # 1. Support Vector Machine
+        # -------------------------------------------------------------------------
+        if model_choice.startswith("1."):
+            st.markdown("###  Support Vector Machine (SVM) Margin Explorer")
+            st.caption("Inspect the separating hyperplane and margin gutters. Adjust C to observe the soft vs. hard margin tradeoff.")
 
-        col_pair, col_c = st.columns([1.5, 1.5])
-        with col_pair:
-            pair = st.selectbox(
-                "Binary Classification Task:",
-                options=[("cs.CV", "cs.CL"), ("cs.CV", "stat.ML"), ("cs.CL", "stat.ML")],
-                format_func=lambda p: f"{p[0]} (+1) vs. {p[1]} (-1)",
-            )
-            cat_pos, cat_neg = pair
-        with col_c:
-            c_val = st.slider("Regularization Penalty C:", min_value=0.01, max_value=20.0, value=1.0, step=0.1)
+            col_pair, col_c = st.columns([1.5, 1.5])
+            with col_pair:
+                pair = st.selectbox(
+                    "Binary Classification Task:",
+                    options=[("cs.CV", "cs.CL"), ("cs.CV", "stat.ML"), ("cs.CL", "stat.ML")],
+                    format_func=lambda p: f"{p[0]} (+1) vs. {p[1]} (-1)",
+                )
+                cat_pos, cat_neg = pair
+            with col_c:
+                c_val = st.slider("Regularization Penalty C:", min_value=0.01, max_value=20.0, value=1.0, step=0.1)
 
-        mask = np.array([c in [cat_pos, cat_neg] for c in categories])
-        sub_papers = [p for i, p in enumerate(papers) if mask[i]]
-        X_sub = X_2d[mask]
-        y_sub = np.array([1 if p.category == cat_pos else -1 for p in sub_papers])
+            mask = np.array([c in [cat_pos, cat_neg] for c in categories])
+            sub_papers = [p for i, p in enumerate(papers) if mask[i]]
+            X_sub = X_2d[mask]
+            y_sub = np.array([1 if p.category == cat_pos else -1 for p in sub_papers])
 
-        svm_res = SVMSimulator.fit(X_sub, y_sub, C=c_val)
+            svm_res = SVMSimulator.fit(X_sub, y_sub, C=c_val)
 
-        col_plot, col_info = st.columns([1.8, 1.2])
-        with col_plot:
-            fig_svm = go.Figure()
-            # Hyperplane and gutters
-            fig_svm.add_trace(go.Scatter(x=svm_res.line_x, y=svm_res.line_boundary, mode="lines", line=dict(color="#0f172a", width=3), name="wᵀx + b = 0"))
-            fig_svm.add_trace(go.Scatter(x=svm_res.line_x, y=svm_res.line_gutter_pos, mode="lines", line=dict(color="#10b981", width=2, dash="dash"), name="wᵀx + b = +1"))
-            fig_svm.add_trace(go.Scatter(x=svm_res.line_x, y=svm_res.line_gutter_neg, mode="lines", line=dict(color="#6366f1", width=2, dash="dash"), name="wᵀx + b = -1"))
+            col_plot, col_info = st.columns([1.8, 1.2])
+            with col_plot:
+                fig_svm = go.Figure()
+                # Hyperplane and gutters
+                fig_svm.add_trace(go.Scatter(x=svm_res.line_x, y=svm_res.line_boundary, mode="lines", line=dict(color="#0f172a", width=3), name="wᵀx + b = 0"))
+                fig_svm.add_trace(go.Scatter(x=svm_res.line_x, y=svm_res.line_gutter_pos, mode="lines", line=dict(color="#10b981", width=2, dash="dash"), name="wᵀx + b = +1"))
+                fig_svm.add_trace(go.Scatter(x=svm_res.line_x, y=svm_res.line_gutter_neg, mode="lines", line=dict(color="#6366f1", width=2, dash="dash"), name="wᵀx + b = -1"))
 
-            # Data points
-            for cat, label_val, color in [(cat_pos, 1, CATEGORY_COLORS[cat_pos]), (cat_neg, -1, CATEGORY_COLORS[cat_neg])]:
-                cat_mask = (y_sub == label_val)
-                fig_svm.add_trace(go.Scatter(x=X_sub[cat_mask, 0], y=X_sub[cat_mask, 1], mode="markers", marker=dict(size=9, color=color), name=cat))
+                # Data points
+                for cat, label_val, color in [(cat_pos, 1, CATEGORY_COLORS[cat_pos]), (cat_neg, -1, CATEGORY_COLORS[cat_neg])]:
+                    cat_mask = (y_sub == label_val)
+                    fig_svm.add_trace(go.Scatter(x=X_sub[cat_mask, 0], y=X_sub[cat_mask, 1], mode="markers", marker=dict(size=9, color=color), name=cat))
 
-            # Support Vectors
-            sv_pts = X_sub[svm_res.support_vector_indices]
-            fig_svm.add_trace(go.Scatter(x=sv_pts[:, 0], y=sv_pts[:, 1], mode="markers", marker=dict(size=18, color="rgba(0,0,0,0)", line=dict(color="#f59e0b", width=3)), name=f"Support Vectors ({len(svm_res.support_vector_indices)})"))
+                # Support Vectors
+                sv_pts = X_sub[svm_res.support_vector_indices]
+                fig_svm.add_trace(go.Scatter(x=sv_pts[:, 0], y=sv_pts[:, 1], mode="markers", marker=dict(size=18, color="rgba(0,0,0,0)", line=dict(color="#f59e0b", width=3)), name=f"Support Vectors ({len(svm_res.support_vector_indices)})"))
 
-            y_span = np.max(X_sub[:, 1]) - np.min(X_sub[:, 1])
-            fig_svm.update_layout(
-                title=f"SVM Margin (C={c_val:.2f}): Width γ = {svm_res.margin_width:.4f} | Accuracy = {svm_res.accuracy*100:.1f}%",
-                xaxis_title="Discriminant Feature 1",
-                yaxis_title="Discriminant Feature 2",
-                yaxis=dict(range=[np.min(X_sub[:, 1]) - 0.4*y_span, np.max(X_sub[:, 1]) + 0.4*y_span]),
-                height=420,
-                margin=dict(l=20, r=20, b=20, t=35),
-            )
-            st.plotly_chart(fig_svm, use_container_width=True)
+                y_span = np.max(X_sub[:, 1]) - np.min(X_sub[:, 1])
+                fig_svm.update_layout(
+                    title=f"SVM Margin (C={c_val:.2f}): Width γ = {svm_res.margin_width:.4f} | Accuracy = {svm_res.accuracy*100:.1f}%",
+                    xaxis_title="Discriminant Feature 1",
+                    yaxis_title="Discriminant Feature 2",
+                    yaxis=dict(range=[np.min(X_sub[:, 1]) - 0.4*y_span, np.max(X_sub[:, 1]) + 0.4*y_span]),
+                    height=420,
+                    margin=dict(l=20, r=20, b=20, t=35),
+                )
+                st.plotly_chart(fig_svm, use_container_width=True, theme=None)
 
-        with col_info:
-            st.markdown(
-                f"""
-                <div style="background:#f8fafc; border:1px solid #cbd5e1; border-radius:8px; padding:16px;">
-                  <b>1. Hyperplane Equation:</b><br>
-                  <code>{svm_res.w[0]:.4f} x₁ + {svm_res.w[1]:.4f} x₂ + {svm_res.b:.4f} = 0</code><br><br>
-                  <b>2. Margin Width γ:</b><br>
-                  <code>γ = 2 / ||w||₂ = 2 / {np.linalg.norm(svm_res.w):.4f} = {svm_res.margin_width:.4f}</code><br><br>
-                  <b>3. Support Vectors:</b><br>
-                  <b>{len(svm_res.support_vector_indices)}</b> critical samples define the boundary.<br><br>
-                  <b>4. Classification Accuracy:</b> <b>{svm_res.accuracy*100:.1f}%</b>
-                </div>
-                """,
-                unsafe_allow_html=True,
-            )
+            with col_info:
+                st.markdown(
+                    f"""
+                    <div style="background:#f8fafc; border:1px solid #cbd5e1; border-radius:8px; padding:16px;">
+                      <b>1. Hyperplane Equation:</b><br>
+                      <code>{svm_res.w[0]:.4f} x₁ + {svm_res.w[1]:.4f} x₂ + {svm_res.b:.4f} = 0</code><br><br>
+                      <b>2. Margin Width γ:</b><br>
+                      <code>γ = 2 / ||w||₂ = 2 / {np.linalg.norm(svm_res.w):.4f} = {svm_res.margin_width:.4f}</code><br><br>
+                      <b>3. Support Vectors:</b><br>
+                      <b>{len(svm_res.support_vector_indices)}</b> critical samples define the boundary.<br><br>
+                      <b>4. Classification Accuracy:</b> <b>{svm_res.accuracy*100:.1f}%</b>
+                    </div>
+                    """,
+                    unsafe_allow_html=True,
+                )
 
-    # -------------------------------------------------------------------------
-    # 2. Decision Tree Split Visualizer
-    # -------------------------------------------------------------------------
-    elif model_choice.startswith("2."):
-        st.markdown("### 🌲 Decision Tree Axis-Aligned Split Explorer")
-        st.caption("Decision trees recursively partition feature space with orthogonal cuts. Move the threshold slider to see exact Gini Impurity and Information Gain.")
+        # -------------------------------------------------------------------------
+        # 2. Decision Tree Split Visualizer
+        # -------------------------------------------------------------------------
+        elif model_choice.startswith("2."):
+            st.markdown("###  Decision Tree Axis-Aligned Split Explorer")
+            st.caption("Decision trees recursively partition feature space with orthogonal cuts. Move the threshold slider to see exact Gini Impurity and Information Gain.")
 
-        split_axis = st.radio("Partitioning Feature Axis:", options=["Feature 1 (Horizontal Split)", "Feature 2 (Vertical Split)"], horizontal=True)
-        feat_idx = 0 if "Feature 1" in split_axis else 1
+            split_axis = st.radio("Partitioning Feature Axis:", options=["Feature 1 (Horizontal Split)", "Feature 2 (Vertical Split)"], horizontal=True)
+            feat_idx = 0 if "Feature 1" in split_axis else 1
 
-        val_min, val_max = float(np.min(X_2d[:, feat_idx])), float(np.max(X_2d[:, feat_idx]))
-        thresh = st.slider("Split Threshold Value:", min_value=val_min, max_value=val_max, value=float(np.mean(X_2d[:, feat_idx])), step=0.05)
+            val_min, val_max = float(np.min(X_2d[:, feat_idx])), float(np.max(X_2d[:, feat_idx]))
+            thresh = st.slider("Split Threshold Value:", min_value=val_min, max_value=val_max, value=float(np.mean(X_2d[:, feat_idx])), step=0.05)
 
-        split_stats = compute_decision_tree_split(X_2d[:, feat_idx], np.array(categories), threshold=thresh)
+            split_stats = compute_decision_tree_split(X_2d[:, feat_idx], np.array(categories), threshold=thresh)
 
-        col_tree_plot, col_tree_math = st.columns([1.8, 1.2])
-        with col_tree_plot:
-            fig_dt = go.Figure()
-            for cat in ["cs.CV", "cs.CL", "cs.LG", "stat.ML"]:
-                mask = np.array([c == cat for c in categories])
-                fig_dt.add_trace(go.Scatter(x=X_2d[mask, 0], y=X_2d[mask, 1], mode="markers", marker=dict(size=9, color=CATEGORY_COLORS[cat]), name=cat))
+            col_tree_plot, col_tree_math = st.columns([1.8, 1.2])
+            with col_tree_plot:
+                fig_dt = go.Figure()
+                for cat in ["cs.CV", "cs.CL", "cs.LG", "stat.ML"]:
+                    mask = np.array([c == cat for c in categories])
+                    fig_dt.add_trace(go.Scatter(x=X_2d[mask, 0], y=X_2d[mask, 1], mode="markers", marker=dict(size=9, color=CATEGORY_COLORS[cat]), name=cat))
 
-            # Draw split line
-            if feat_idx == 0:
-                fig_dt.add_vline(x=thresh, line_width=3, line_dash="dash", line_color="#ef4444")
-            else:
-                fig_dt.add_hline(y=thresh, line_width=3, line_dash="dash", line_color="#ef4444")
+                # Draw split line
+                if feat_idx == 0:
+                    fig_dt.add_vline(x=thresh, line_width=3, line_dash="dash", line_color="#ef4444")
+                else:
+                    fig_dt.add_hline(y=thresh, line_width=3, line_dash="dash", line_color="#ef4444")
 
-            fig_dt.update_layout(title="Orthogonal Decision Cut across 4 Domains", height=420, margin=dict(l=20, r=20, b=20, t=35))
-            st.plotly_chart(fig_dt, use_container_width=True)
+                fig_dt.update_layout(title="Orthogonal Decision Cut across 4 Domains", height=420, margin=dict(l=20, r=20, b=20, t=35))
+                st.plotly_chart(fig_dt, use_container_width=True, theme=None)
 
-        with col_tree_math:
-            st.markdown(
-                f"""
-                <div style="background:#f8fafc; border:1px solid #cbd5e1; border-radius:8px; padding:16px;">
-                  <b>1. Parent Node Impurity:</b><br>
-                  • Parent Entropy: <code>H(S) = {split_stats['parent_entropy']:.4f} bits</code><br>
-                  • Parent Gini: <code>Gini(S) = {split_stats['parent_gini']:.4f}</code><br><br>
-                  <b>2. Children Node Partitions:</b><br>
-                  • Left / Below: <b>{split_stats['left_count']} papers</b><br>
-                  • Right / Above: <b>{split_stats['right_count']} papers</b><br><br>
-                  <b>3. Information Gain (ΔH):</b><br>
-                  <div style="font-family:monospace; background:#fff; padding:6px; border:1px solid #e2e8f0; border-radius:4px; margin-top:4px;">
-                    Gain = H(Parent) - ∑ (|S_v|/|S|) H(S_v)<br>
-                    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;= <b>{split_stats['info_gain']:.4f} bits</b>
-                  </div><br>
-                  <b>4. Weighted Split Gini:</b> <code>{split_stats['split_gini']:.4f}</code>
-                </div>
-                """,
-                unsafe_allow_html=True,
-            )
+            with col_tree_math:
+                st.markdown(
+                    f"""
+                    <div style="background:#f8fafc; border:1px solid #cbd5e1; border-radius:8px; padding:16px;">
+                      <b>1. Parent Node Impurity:</b><br>
+                      • Parent Entropy: <code>H(S) = {split_stats['parent_entropy']:.4f} bits</code><br>
+                      • Parent Gini: <code>Gini(S) = {split_stats['parent_gini']:.4f}</code><br><br>
+                      <b>2. Children Node Partitions:</b><br>
+                      • Left / Below: <b>{split_stats['left_count']} papers</b><br>
+                      • Right / Above: <b>{split_stats['right_count']} papers</b><br><br>
+                      <b>3. Information Gain (ΔH):</b><br>
+                      <div style="font-family:monospace; background:#fff; padding:6px; border:1px solid #e2e8f0; border-radius:4px; margin-top:4px;">
+                        Gain = H(Parent) - ∑ (|S_v|/|S|) H(S_v)<br>
+                        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;= <b>{split_stats['info_gain']:.4f} bits</b>
+                      </div><br>
+                      <b>4. Weighted Split Gini:</b> <code>{split_stats['split_gini']:.4f}</code>
+                    </div>
+                    """,
+                    unsafe_allow_html=True,
+                )
 
-    # -------------------------------------------------------------------------
-    # 3. K-Nearest Neighbors
-    # -------------------------------------------------------------------------
-    elif model_choice.startswith("3."):
-        st.markdown("### 🎯 K-Nearest Neighbors (KNN) Metric Ball")
-        st.caption("Place a query coordinate and observe the expanding Euclidean metric ball selecting K neighbors.")
+        # -------------------------------------------------------------------------
+        # 3. K-Nearest Neighbors
+        # -------------------------------------------------------------------------
+        elif model_choice.startswith("3."):
+            st.markdown("###  K-Nearest Neighbors (KNN) Metric Ball")
+            st.caption("Place a query coordinate and observe the expanding Euclidean metric ball selecting K neighbors.")
 
-        col_q1, col_q2, col_k = st.columns(3)
-        with col_q1:
-            q_x = st.slider("Query X Coordinate:", float(np.min(X_2d[:, 0])), float(np.max(X_2d[:, 0])), 0.0, step=0.05)
-        with col_q2:
-            q_y = st.slider("Query Y Coordinate:", float(np.min(X_2d[:, 1])), float(np.max(X_2d[:, 1])), 0.0, step=0.05)
-        with col_k:
-            k_val = st.selectbox("Neighborhood Size K:", options=[1, 3, 5, 9, 15], index=2)
+            col_q1, col_q2, col_k = st.columns(3)
+            with col_q1:
+                q_x = st.slider("Query X Coordinate:", float(np.min(X_2d[:, 0])), float(np.max(X_2d[:, 0])), 0.0, step=0.05)
+            with col_q2:
+                q_y = st.slider("Query Y Coordinate:", float(np.min(X_2d[:, 1])), float(np.max(X_2d[:, 1])), 0.0, step=0.05)
+            with col_k:
+                k_val = st.selectbox("Neighborhood Size K:", options=[1, 3, 5, 9, 15], index=2)
 
-        knn_res = compute_knn_neighbors(X_2d, np.array(categories), np.array([q_x, q_y]), k=k_val)
+            knn_res = compute_knn_neighbors(X_2d, np.array(categories), np.array([q_x, q_y]), k=k_val)
 
-        col_knn_plot, col_knn_info = st.columns([1.8, 1.2])
-        with col_knn_plot:
-            fig_knn = go.Figure()
-            for cat in ["cs.CV", "cs.CL", "cs.LG", "stat.ML"]:
-                mask = np.array([c == cat for c in categories])
-                fig_knn.add_trace(go.Scatter(x=X_2d[mask, 0], y=X_2d[mask, 1], mode="markers", marker=dict(size=9, color=CATEGORY_COLORS[cat]), name=cat))
+            col_knn_plot, col_knn_info = st.columns([1.8, 1.2])
+            with col_knn_plot:
+                fig_knn = go.Figure()
+                for cat in ["cs.CV", "cs.CL", "cs.LG", "stat.ML"]:
+                    mask = np.array([c == cat for c in categories])
+                    fig_knn.add_trace(go.Scatter(x=X_2d[mask, 0], y=X_2d[mask, 1], mode="markers", marker=dict(size=9, color=CATEGORY_COLORS[cat]), name=cat))
 
-            # Query Point
-            fig_knn.add_trace(go.Scatter(x=[q_x], y=[q_y], mode="markers", marker=dict(size=14, color="#000", symbol="star"), name="Query Point"))
+                # Query Point
+                fig_knn.add_trace(go.Scatter(x=[q_x], y=[q_y], mode="markers", marker=dict(size=14, color="#000", symbol="star"), name="Query Point"))
 
-            # Highlight Nearest Neighbors
-            k_pts = X_2d[knn_res["indices"]]
-            fig_knn.add_trace(go.Scatter(x=k_pts[:, 0], y=k_pts[:, 1], mode="markers", marker=dict(size=18, color="rgba(0,0,0,0)", line=dict(color="#f59e0b", width=3)), name=f"K={k_val} Neighbors"))
+                # Highlight Nearest Neighbors
+                k_pts = X_2d[knn_res["indices"]]
+                fig_knn.add_trace(go.Scatter(x=k_pts[:, 0], y=k_pts[:, 1], mode="markers", marker=dict(size=18, color="rgba(0,0,0,0)", line=dict(color="#f59e0b", width=3)), name=f"K={k_val} Neighbors"))
 
-            # Circle for metric ball
-            theta = np.linspace(0, 2*np.pi, 100)
-            circle_x = q_x + knn_res["radius"] * np.cos(theta)
-            circle_y = q_y + knn_res["radius"] * np.sin(theta)
-            fig_knn.add_trace(go.Scatter(x=circle_x, y=circle_y, mode="lines", line=dict(color="#f59e0b", dash="dot"), name=f"Radius R={knn_res['radius']:.3f}"))
+                # Circle for metric ball
+                theta = np.linspace(0, 2*np.pi, 100)
+                circle_x = q_x + knn_res["radius"] * np.cos(theta)
+                circle_y = q_y + knn_res["radius"] * np.sin(theta)
+                fig_knn.add_trace(go.Scatter(x=circle_x, y=circle_y, mode="lines", line=dict(color="#f59e0b", dash="dot"), name=f"Radius R={knn_res['radius']:.3f}"))
 
-            fig_knn.update_layout(title=f"KNN Prediction: {knn_res['prediction']}", height=420, margin=dict(l=20, r=20, b=20, t=35))
-            st.plotly_chart(fig_knn, use_container_width=True)
+                fig_knn.update_layout(title=f"KNN Prediction: {knn_res['prediction']}", height=420, margin=dict(l=20, r=20, b=20, t=35))
+                st.plotly_chart(fig_knn, use_container_width=True, theme=None)
 
-        with col_knn_info:
-            st.markdown(
-                f"""
-                <div style="background:#f8fafc; border:1px solid #cbd5e1; border-radius:8px; padding:16px;">
-                  <b>1. Majority Vote Winner:</b><br>
-                  <span style="font-size:1.2rem; font-weight:800; color:{CATEGORY_COLORS[knn_res['prediction']]};">
-                    {knn_res['prediction']}
-                  </span><br><br>
-                  <b>2. Neighbor Vote Breakdown:</b>
-                  {knn_res['vote_distribution']}<br><br>
-                  <b>3. Metric Ball Radius:</b> <code>R = {knn_res['radius']:.4f}</code>
-                </div>
-                """,
-                unsafe_allow_html=True,
-            )
+            with col_knn_info:
+                st.markdown(
+                    f"""
+                    <div style="background:#f8fafc; border:1px solid #cbd5e1; border-radius:8px; padding:16px;">
+                      <b>1. Majority Vote Winner:</b><br>
+                      <span style="font-size:1.2rem; font-weight:800; color:{CATEGORY_COLORS[knn_res['prediction']]};">
+                        {knn_res['prediction']}
+                      </span><br><br>
+                      <b>2. Neighbor Vote Breakdown:</b>
+                      {knn_res['vote_distribution']}<br><br>
+                      <b>3. Metric Ball Radius:</b> <code>R = {knn_res['radius']:.4f}</code>
+                    </div>
+                    """,
+                    unsafe_allow_html=True,
+                )
 
-    # -------------------------------------------------------------------------
-    # 4. Naive Bayes
-    # -------------------------------------------------------------------------
-    elif model_choice.startswith("4."):
-        st.markdown("### 🎲 Naive Bayes Probability Inspector")
-        st.caption("Multinomial Naive Bayes multiplying term likelihoods with Laplace smoothing: P(C|D) ∝ P(C) ∏ P(w_i|C).")
+        # -------------------------------------------------------------------------
+        # 4. Naive Bayes
+        # -------------------------------------------------------------------------
+        elif model_choice.startswith("4."):
+            st.markdown("###  Naive Bayes Probability Inspector")
+            st.caption("Multinomial Naive Bayes multiplying term likelihoods with Laplace smoothing: P(C|D) ∝ P(C) ∏ P(w_i|C).")
 
-        c_mat, vocab_nb = vec.transform_raw_counts(all_abstracts), vec.feature_names
-        test_phrase = st.text_input("Enter a scientific query phrase:", value="convolutional neural network for image recognition")
+            c_mat, vocab_nb = vec.transform_raw_counts(all_abstracts), vec.feature_names
+            test_phrase = st.text_input("Enter a scientific query phrase:", value="convolutional neural network for image recognition")
 
-        tokens_nb = [vec.vocabulary[t] for t in vec.tokenizer(test_phrase) if t in vec.vocabulary]
-        nb_res = compute_naive_bayes_posteriors(c_mat, np.array(categories), tokens_nb, sorted(list(set(categories))))
+            tokens_nb = [vec.vocabulary[t] for t in vec.tokenizer(test_phrase) if t in vec.vocabulary]
+            nb_res = compute_naive_bayes_posteriors(c_mat, np.array(categories), tokens_nb, sorted(list(set(categories))))
 
-        st.markdown(f"**Predicted Category:** `{nb_res['predicted_class']}`")
-        df_nb = pd.DataFrame([{"Category": c, "Posterior Probability P(C|D)": f"{p*100:.2f}%"} for c, p in nb_res["posterior_probs"].items()])
-        st.dataframe(df_nb, use_container_width=True)
+            st.markdown(f"**Predicted Category:** `{nb_res['predicted_class']}`")
+            df_nb = pd.DataFrame([{"Category": c, "Posterior Probability P(C|D)": f"{p*100:.2f}%"} for c, p in nb_res["posterior_probs"].items()])
+            st.dataframe(df_nb, use_container_width=True)
 
-    # -------------------------------------------------------------------------
-    # 5. Multi-Layer Perceptron (MLP)
-    # -------------------------------------------------------------------------
-    elif model_choice.startswith("5."):
-        st.markdown("### 🧠 Multi-Layer Perceptron (MLP) Forward & Activation Inspector")
-        st.caption("Inspect real-time numerical activations flowing through a 2-layer Neural Network: Input (2D) → Hidden (4 ReLU Units) → Output (4 Softmax Probabilities).")
+        # -------------------------------------------------------------------------
+        # 5. Multi-Layer Perceptron (MLP)
+        # -------------------------------------------------------------------------
+        elif model_choice.startswith("5."):
+            st.markdown("###  Multi-Layer Perceptron (MLP) Forward & Activation Inspector")
+            st.caption("Inspect real-time numerical activations flowing through a 2-layer Neural Network: Input (2D) → Hidden (4 ReLU Units) → Output (4 Softmax Probabilities).")
 
-        class_list = ["cs.CV", "cs.CL", "cs.LG", "stat.ML"]
-        y_indices = np.array([class_list.index(c) for c in categories])
-        mlp_model = SimpleMLP(hidden_dim=4, num_classes=4).fit(X_2d, y_indices, epochs=160, lr=0.08)
+            class_list = ["cs.CV", "cs.CL", "cs.LG", "stat.ML"]
+            y_indices = np.array([class_list.index(c) for c in categories])
+            mlp_model = SimpleMLP(hidden_dim=4, num_classes=4).fit(X_2d, y_indices, epochs=160, lr=0.08)
 
-        col_paper_sel, col_arch_info = st.columns([2.0, 1.2])
-        with col_paper_sel:
-            paper_titles = [f"[{p.category}] {p.title}" for p in papers]
-            chosen_paper_idx = st.selectbox(
-                "Select Research Abstract to Propagate Forward:",
-                options=list(range(len(papers))),
-                format_func=lambda i: paper_titles[i],
-                index=0,
-            )
-            target_paper = papers[chosen_paper_idx]
-            x_in = X_2d[chosen_paper_idx]
+            col_paper_sel, col_arch_info = st.columns([2.0, 1.2])
+            with col_paper_sel:
+                paper_titles = [f"[{p.category}] {p.title}" for p in papers]
+                chosen_paper_idx = st.selectbox(
+                    "Select Research Abstract to Propagate Forward:",
+                    options=list(range(len(papers))),
+                    format_func=lambda i: paper_titles[i],
+                    index=0,
+                )
+                target_paper = papers[chosen_paper_idx]
+                x_in = X_2d[chosen_paper_idx]
 
-        with col_arch_info:
-            st.markdown(
-                f"""
-                <div style="background:#f8fafc; border:1px solid #cbd5e1; border-radius:8px; padding:12px;">
-                  <b>Input Coordinates:</b> x₁ = <code>{x_in[0]:.3f}</code>, x₂ = <code>{x_in[1]:.3f}</code><br>
-                  <b>True Category:</b> <span style="color:{CATEGORY_COLORS[target_paper.category]}; font-weight:700;">{target_paper.category}</span><br>
-                  <b>Architecture:</b> 2 Inputs → 4 ReLUs → 4 Softmax Outputs
-                </div>
-                """,
-                unsafe_allow_html=True,
-            )
+            with col_arch_info:
+                st.markdown(
+                    f"""
+                    <div style="background:#f8fafc; border:1px solid #cbd5e1; border-radius:8px; padding:12px;">
+                      <b>Input Coordinates:</b> x₁ = <code>{x_in[0]:.3f}</code>, x₂ = <code>{x_in[1]:.3f}</code><br>
+                      <b>True Category:</b> <span style="color:{CATEGORY_COLORS[target_paper.category]}; font-weight:700;">{target_paper.category}</span><br>
+                      <b>Architecture:</b> 2 Inputs → 4 ReLUs → 4 Softmax Outputs
+                    </div>
+                    """,
+                    unsafe_allow_html=True,
+                )
 
-        mlp_act = mlp_model.inspect_sample(x_in)
+            mlp_act = mlp_model.inspect_sample(x_in)
 
-        col_nn_graph, col_nn_math = st.columns([1.8, 1.2])
-        with col_nn_graph:
-            fig_nn = go.Figure()
+            col_nn_graph, col_nn_math = st.columns([1.8, 1.2])
+            with col_nn_graph:
+                fig_nn = go.Figure()
 
-            in_y = [0.4, 0.6]
-            hid_y = [0.2, 0.4, 0.6, 0.8]
-            out_y = [0.2, 0.4, 0.6, 0.8]
+                in_y = [0.4, 0.6]
+                hid_y = [0.2, 0.4, 0.6, 0.8]
+                out_y = [0.2, 0.4, 0.6, 0.8]
 
-            for i, y_i in enumerate(in_y):
+                for i, y_i in enumerate(in_y):
+                    for j, y_h in enumerate(hid_y):
+                        w = mlp_act["W1"][j, i]
+                        fig_nn.add_trace(go.Scatter(
+                            x=[0, 1], y=[y_i, y_h],
+                            mode="lines",
+                            line=dict(color="#94a3b8" if w > 0 else "#cbd5e1", width=max(1, min(6, abs(w) * 3))),
+                            hoverinfo="text",
+                            text=f"W₁[{j},{i}] = {w:.3f}",
+                            showlegend=False,
+                        ))
+
                 for j, y_h in enumerate(hid_y):
-                    w = mlp_act["W1"][j, i]
-                    fig_nn.add_trace(go.Scatter(
-                        x=[0, 1], y=[y_i, y_h],
-                        mode="lines",
-                        line=dict(color="#94a3b8" if w > 0 else "#cbd5e1", width=max(1, min(6, abs(w) * 3))),
-                        hoverinfo="text",
-                        text=f"W₁[{j},{i}] = {w:.3f}",
-                        showlegend=False,
-                    ))
+                    for k, y_o in enumerate(out_y):
+                        w = mlp_act["W2"][k, j]
+                        fig_nn.add_trace(go.Scatter(
+                            x=[1, 2], y=[y_h, y_o],
+                            mode="lines",
+                            line=dict(color="#94a3b8" if w > 0 else "#cbd5e1", width=max(1, min(6, abs(w) * 3))),
+                            hoverinfo="text",
+                            text=f"W₂[{k},{j}] = {w:.3f}",
+                            showlegend=False,
+                        ))
 
-            for j, y_h in enumerate(hid_y):
-                for k, y_o in enumerate(out_y):
-                    w = mlp_act["W2"][k, j]
-                    fig_nn.add_trace(go.Scatter(
-                        x=[1, 2], y=[y_h, y_o],
-                        mode="lines",
-                        line=dict(color="#94a3b8" if w > 0 else "#cbd5e1", width=max(1, min(6, abs(w) * 3))),
-                        hoverinfo="text",
-                        text=f"W₂[{k},{j}] = {w:.3f}",
-                        showlegend=False,
-                    ))
+                fig_nn.add_trace(go.Scatter(
+                    x=[0, 0], y=in_y,
+                    mode="markers+text",
+                    marker=dict(size=26, color="#e2e8f0", line=dict(color="#0f172a", width=2)),
+                    text=["x₁", "x₂"],
+                    textposition="middle center",
+                    textfont=dict(size=12, color="#0f172a", family="monospace"),
+                    hovertext=[f"Input 1: {x_in[0]:.4f}", f"Input 2: {x_in[1]:.4f}"],
+                    name="Input Layer",
+                ))
 
-            fig_nn.add_trace(go.Scatter(
-                x=[0, 0], y=in_y,
-                mode="markers+text",
-                marker=dict(size=26, color="#e2e8f0", line=dict(color="#0f172a", width=2)),
-                text=["x₁", "x₂"],
-                textposition="middle center",
-                textfont=dict(size=12, color="#0f172a", family="monospace"),
-                hovertext=[f"Input 1: {x_in[0]:.4f}", f"Input 2: {x_in[1]:.4f}"],
-                name="Input Layer",
-            ))
+                hid_colors = ["#3b82f6" if a > 0 else "#94a3b8" for a in mlp_act["a1"]]
+                fig_nn.add_trace(go.Scatter(
+                    x=[1, 1, 1, 1], y=hid_y,
+                    mode="markers+text",
+                    marker=dict(size=28, color=hid_colors, line=dict(color="#1e293b", width=2)),
+                    text=[f"h{j+1}" for j in range(4)],
+                    textposition="middle center",
+                    textfont=dict(size=12, color="#ffffff", family="monospace"),
+                    hovertext=[f"Hidden {j+1}: z={mlp_act['z1'][j]:.3f}, a=ReLU(z)={mlp_act['a1'][j]:.3f}" for j in range(4)],
+                    name="Hidden Layer (ReLU)",
+                ))
 
-            hid_colors = ["#3b82f6" if a > 0 else "#94a3b8" for a in mlp_act["a1"]]
-            fig_nn.add_trace(go.Scatter(
-                x=[1, 1, 1, 1], y=hid_y,
-                mode="markers+text",
-                marker=dict(size=28, color=hid_colors, line=dict(color="#1e293b", width=2)),
-                text=[f"h{j+1}" for j in range(4)],
-                textposition="middle center",
-                textfont=dict(size=12, color="#ffffff", family="monospace"),
-                hovertext=[f"Hidden {j+1}: z={mlp_act['z1'][j]:.3f}, a=ReLU(z)={mlp_act['a1'][j]:.3f}" for j in range(4)],
-                name="Hidden Layer (ReLU)",
-            ))
+                out_colors = [CATEGORY_COLORS[c] for c in class_list]
+                pred_idx = mlp_act["pred_idx"]
+                fig_nn.add_trace(go.Scatter(
+                    x=[2, 2, 2, 2], y=out_y,
+                    mode="markers+text",
+                    marker=dict(size=[max(20, p * 45) for p in mlp_act["probs"]], color=out_colors, line=dict(color="#0f172a", width=[3 if i == pred_idx else 1 for i in range(4)])),
+                    text=[c.split(".")[1] for c in class_list],
+                    textposition="middle center",
+                    textfont=dict(size=11, color="#ffffff", family="monospace"),
+                    hovertext=[f"{c}: Softmax P={p*100:.2f}%" for c, p in zip(class_list, mlp_act["probs"])],
+                    name="Output Layer (Softmax)",
+                ))
 
-            out_colors = [CATEGORY_COLORS[c] for c in class_list]
-            pred_idx = mlp_act["pred_idx"]
-            fig_nn.add_trace(go.Scatter(
-                x=[2, 2, 2, 2], y=out_y,
-                mode="markers+text",
-                marker=dict(size=[max(20, p * 45) for p in mlp_act["probs"]], color=out_colors, line=dict(color="#0f172a", width=[3 if i == pred_idx else 1 for i in range(4)])),
-                text=[c.split(".")[1] for c in class_list],
-                textposition="middle center",
-                textfont=dict(size=11, color="#ffffff", family="monospace"),
-                hovertext=[f"{c}: Softmax P={p*100:.2f}%" for c, p in zip(class_list, mlp_act["probs"])],
-                name="Output Layer (Softmax)",
-            ))
+                fig_nn.update_layout(
+                    title="Neural Forward Propagation (Interactive Node Activations)",
+                    xaxis=dict(showgrid=False, zeroline=False, showticklabels=True, tickvals=[0, 1, 2], ticktext=["Input Layer (2D)", "Hidden Layer (4 ReLUs)", "Output Softmax (4 Classes)"]),
+                    yaxis=dict(showgrid=False, zeroline=False, showticklabels=False),
+                    height=380,
+                    margin=dict(l=20, r=20, b=20, t=35),
+                )
+                st.plotly_chart(fig_nn, use_container_width=True, theme=None)
 
-            fig_nn.update_layout(
-                title="Neural Forward Propagation (Interactive Node Activations)",
-                xaxis=dict(showgrid=False, zeroline=False, showticklabels=True, tickvals=[0, 1, 2], ticktext=["Input Layer (2D)", "Hidden Layer (4 ReLUs)", "Output Softmax (4 Classes)"]),
-                yaxis=dict(showgrid=False, zeroline=False, showticklabels=False),
-                height=380,
-                margin=dict(l=20, r=20, b=20, t=35),
-            )
-            st.plotly_chart(fig_nn, use_container_width=True)
+            with col_nn_math:
+                st.markdown("####  Step-by-Step Numerical Derivation")
+                st.markdown(
+                    f"""
+                    <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:8px; padding:12px; font-size:0.85rem; line-height:1.5;">
+                      <b>1. Input Vector x:</b><br>
+                      <code>x = [{x_in[0]:.3f}, {x_in[1]:.3f}]ᵀ</code><br><br>
+                      <b>2. Hidden Pre-activations z^[1] = W^[1]x + b^[1]:</b><br>
+                      <code>z^[1] = [{', '.join(f'{v:.3f}' for v in mlp_act['z1'])}]ᵀ</code><br><br>
+                      <b>3. ReLU Activations a^[1] = max(0, z^[1]):</b><br>
+                      <code>a^[1] = [{', '.join(f'{v:.3f}' for v in mlp_act['a1'])}]ᵀ</code><br><br>
+                      <b>4. Output Logits z^[2] = W^[2]a^[1] + b^[2]:</b><br>
+                      <code>z^[2] = [{', '.join(f'{v:.3f}' for v in mlp_act['z2'])}]ᵀ</code><br><br>
+                      <b>5. Softmax Probabilities ŷ = exp(z^[2]) / ∑ exp(z^[2]):</b><br>
+                      • <b>cs.CV:</b> <code>{mlp_act['probs'][0]*100:.2f}%</code><br>
+                      • <b>cs.CL:</b> <code>{mlp_act['probs'][1]*100:.2f}%</code><br>
+                      • <b>cs.LG:</b> <code>{mlp_act['probs'][2]*100:.2f}%</code><br>
+                      • <b>stat.ML:</b> <code>{mlp_act['probs'][3]*100:.2f}%</code><br><br>
+                      <b>Predicted Class:</b> <span style="color:{CATEGORY_COLORS[class_list[pred_idx]]}; font-weight:800;">{class_list[pred_idx]}</span>
+                    </div>
+                    """,
+                    unsafe_allow_html=True,
+                )
 
-        with col_nn_math:
-            st.markdown("#### 🔢 Step-by-Step Numerical Derivation")
-            st.markdown(
-                f"""
-                <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:8px; padding:12px; font-size:0.85rem; line-height:1.5;">
-                  <b>1. Input Vector x:</b><br>
-                  <code>x = [{x_in[0]:.3f}, {x_in[1]:.3f}]ᵀ</code><br><br>
-                  <b>2. Hidden Pre-activations z^[1] = W^[1]x + b^[1]:</b><br>
-                  <code>z^[1] = [{', '.join(f'{v:.3f}' for v in mlp_act['z1'])}]ᵀ</code><br><br>
-                  <b>3. ReLU Activations a^[1] = max(0, z^[1]):</b><br>
-                  <code>a^[1] = [{', '.join(f'{v:.3f}' for v in mlp_act['a1'])}]ᵀ</code><br><br>
-                  <b>4. Output Logits z^[2] = W^[2]a^[1] + b^[2]:</b><br>
-                  <code>z^[2] = [{', '.join(f'{v:.3f}' for v in mlp_act['z2'])}]ᵀ</code><br><br>
-                  <b>5. Softmax Probabilities ŷ = exp(z^[2]) / ∑ exp(z^[2]):</b><br>
-                  • <b>cs.CV:</b> <code>{mlp_act['probs'][0]*100:.2f}%</code><br>
-                  • <b>cs.CL:</b> <code>{mlp_act['probs'][1]*100:.2f}%</code><br>
-                  • <b>cs.LG:</b> <code>{mlp_act['probs'][2]*100:.2f}%</code><br>
-                  • <b>stat.ML:</b> <code>{mlp_act['probs'][3]*100:.2f}%</code><br><br>
-                  <b>Predicted Class:</b> <span style="color:{CATEGORY_COLORS[class_list[pred_idx]]}; font-weight:800;">{class_list[pred_idx]}</span>
-                </div>
-                """,
-                unsafe_allow_html=True,
-            )
+        # -------------------------------------------------------------------------
+        return
 
-    # -------------------------------------------------------------------------
     # MODULE C: Rigorous Evaluation & Error Diagnostics Suite
     # -------------------------------------------------------------------------
     st.markdown("---")
-    st.markdown("### 📊 Rigorous Model Evaluation & Error Diagnostics Suite")
+    st.markdown("###  Rigorous Model Evaluation & Error Diagnostics Suite")
     st.caption("Comprehensive empirical evaluation: 4x4 Confusion Matrix with Train/Test splitting, Per-Class Precision/Recall/Macro-F1, and Data Leakage vs. Overfitting analysis.")
 
     class_list = ["cs.CV", "cs.CL", "cs.LG", "stat.ML"]
     y_true_indices = np.array([class_list.index(c) for c in categories])
 
     tab_eval_cm, tab_eval_curve = st.tabs([
-        "🎯 Confusion Matrix & Failure Inspector",
-        "📈 Bias-Variance / Overfitting Curve & Data Leakage Lab",
+        " Confusion Matrix & Failure Inspector",
+        " Bias-Variance / Overfitting Curve & Data Leakage Lab",
     ])
 
     from sklearn.model_selection import train_test_split
     idx_all = np.arange(len(categories))
     idx_train, idx_test = train_test_split(idx_all, test_size=0.30, random_state=42, stratify=categories)
 
-    mlp_eval = SimpleMLP(hidden_dim=4, num_classes=4).fit(X_2d[idx_train], y_true_indices[idx_train], epochs=180, lr=0.08)
-    train_acc = float(np.mean(mlp_eval.predict(X_2d[idx_train]) == y_true_indices[idx_train]))
-    test_acc = float(np.mean(mlp_eval.predict(X_2d[idx_test]) == y_true_indices[idx_test]))
+    from glassbox.core.experiments import text_projection_split
+    honest_projection = text_projection_split(all_abstracts, categories, idx_train, idx_test, analyzer=vec.tokenizer)
+    X_evaluation = np.zeros_like(X_2d)
+    X_evaluation[idx_train] = honest_projection["train"]
+    X_evaluation[idx_test] = honest_projection["test"]
+    mlp_eval = SimpleMLP(hidden_dim=4, num_classes=4).fit(X_evaluation[idx_train], y_true_indices[idx_train], epochs=180, lr=0.08)
+    train_acc = float(np.mean(mlp_eval.predict(X_evaluation[idx_train]) == y_true_indices[idx_train]))
+    test_acc = float(np.mean(mlp_eval.predict(X_evaluation[idx_test]) == y_true_indices[idx_test]))
 
     with tab_eval_cm:
         col_eval_choice, col_eval_metrics = st.columns([1.6, 1.4])
         with col_eval_choice:
             eval_split_mode = st.radio(
                 "Evaluation Split Mode (Scientific Rigor):",
-                options=["Held-Out Test Set (30% Unseen Data - Generalization)", "Full Dataset (Training Set Fit)"],
+                options=["Held-Out Validation Set (30%)", "Training Set (70%)"],
                 horizontal=True,
             )
         is_held_out = "Held-Out" in eval_split_mode
 
-        eval_indices = idx_test if is_held_out else idx_all
+        eval_indices = idx_test if is_held_out else idx_train
         eval_cats = [categories[i] for i in eval_indices]
-        eval_preds_idx = mlp_eval.predict(X_2d[eval_indices])
+        eval_preds_idx = mlp_eval.predict(X_evaluation[eval_indices])
         eval_preds_cats = [class_list[i] for i in eval_preds_idx]
         eval_results = compute_confusion_matrix_and_metrics(eval_cats, eval_preds_cats, class_list)
 
@@ -435,9 +444,9 @@ def render_stage5():
             st.markdown(
                 f"""
                 <div style="background:#f8fafc; border:1px solid #cbd5e1; border-radius:8px; padding:10px 14px; font-size:0.85rem; line-height:1.5;">
-                  <b>Model:</b> 2-Layer MLP (ReLU) | <b>Evaluated On:</b> {'Held-Out Test Set (n=20)' if is_held_out else 'Full Corpus (n=64)'}<br>
-                  <b>Training Accuracy:</b> <code>{train_acc*100:.1f}%</code> &nbsp;|&nbsp; 
-                  <b>Held-Out Test Accuracy:</b> <code>{test_acc*100:.1f}%</code>
+                  <b>Model:</b> 2-Layer MLP (ReLU) | <b>Evaluated On:</b> {'Validation' if is_held_out else 'Training'} (n={len(eval_indices)})<br>
+                  <b>Training Accuracy:</b> <code>{train_acc*100:.1f}%</code> &nbsp;|&nbsp;
+                  <b>Validation Accuracy:</b> <code>{test_acc*100:.1f}%</code>
                 </div>
                 """,
                 unsafe_allow_html=True,
@@ -452,13 +461,13 @@ def render_stage5():
                 color_continuous_scale="Blues",
                 text_auto=True,
                 labels=dict(x="Predicted Domain", y="Ground-Truth Domain"),
-                title=f"4×4 Confusion Matrix ({'Held-Out Test Set' if is_held_out else 'Full Corpus'} Accuracy: {eval_results['accuracy']*100:.1f}%)",
+                title=f"Confusion matrix ({'Validation' if is_held_out else 'Training'} accuracy: {eval_results['accuracy']*100:.1f}%)",
             )
             fig_cm.update_layout(height=340, margin=dict(l=20, r=20, b=20, t=35))
-            st.plotly_chart(fig_cm, use_container_width=True)
+            st.plotly_chart(fig_cm, use_container_width=True, theme=None)
 
         with col_cm_report:
-            st.markdown("#### 📋 Scratch Classification Report HUD")
+            st.markdown("####  Scratch Classification Report HUD")
             df_report_rows = []
             for c in class_list:
                 m = eval_results["per_class"][c]
@@ -479,7 +488,7 @@ def render_stage5():
             st.write(pd.DataFrame(df_report_rows).to_html(escape=False, index=False), unsafe_allow_html=True)
 
         # Inspect Failure Feature
-        st.markdown("#### 🔍 The 'Inspect Failure' Deep-Dive")
+        st.markdown("####  The 'Inspect Failure' Deep-Dive")
         st.caption("Select any misclassified paper from the active evaluation split. Inspect the exact scientific paper and its overlapping vocabulary.")
 
         error_pairs = []
@@ -504,21 +513,20 @@ def render_stage5():
                 <div style="background:#fff1f2; border:1px solid #fecdd3; border-radius:8px; padding:14px; margin-top:8px;">
                   <b>Title:</b> {p_err.title}<br>
                   <b>Paper ID:</b> <code>{p_err.id}</code> | <b>Year:</b> {p_err.year} | <b>Authors:</b> {p_err.authors}<br>
-                  <b>True Label:</b> <span style="color:#059669; font-weight:700;">{active_err['true_cat']}</span> | 
+                  <b>True Label:</b> <span style="color:#059669; font-weight:700;">{active_err['true_cat']}</span> |
                   <b>Model Predicted:</b> <span style="color:#e11d48; font-weight:700;">{active_err['pred_cat']}</span><br><br>
                   <b>Abstract Excerpt:</b> <i>"{p_err.abstract}"</i><br><br>
-                  <b>💡 Why this misclassification occurred:</b><br>
-                  This research paper sits at the intersection of {active_err['true_cat']} and {active_err['pred_cat']}. 
-                  It employs cross-disciplinary vocabulary (such as multimodal representations, attention over visual tokens, or optimization bounds on neural layers) that places its representation near the decision boundary gutter.
+                  <b>Question to investigate:</b><br>
+                  This model uses only three selected term coordinates before LDA. Which information in the text is absent from that representation? A label mismatch alone does not establish its cause.
                 </div>
                 """,
                 unsafe_allow_html=True,
             )
         else:
-            st.success("🎉 All documents in this split are correctly classified by the model!")
+            st.success(" All documents in this split are correctly classified by the model!")
 
     with tab_eval_curve:
-        st.markdown("#### 📉 The Bias-Variance Tradeoff & Data Leakage Lab")
+        st.markdown("####  The Bias-Variance Tradeoff & Data Leakage Lab")
         st.caption("Investigate Puzzle: 'The Suspiciously Good Classifier'. Compare an honest out-of-sample split against the common data leakage flaw of fitting dimensionality reduction on all data before splitting.")
 
         col_bv_depth, col_bv_leak = st.columns([1.5, 1.5])
@@ -533,16 +541,15 @@ def render_stage5():
         is_leaked = "Leaked" in leakage_toggle
 
         # Compute honest vs leaked projections
-        X_raw_3d = X_all[:, idx_terms]
+        X_raw_3d = X_features
         X_tr_raw, X_te_raw = X_raw_3d[idx_train], X_raw_3d[idx_test]
         y_tr_raw = [categories[i] for i in idx_train]
         y_te_raw = [categories[i] for i in idx_test]
 
         if not is_leaked:
             # Fit LDA strictly on training data
-            lda_honest = LDASimulator.fit(X_tr_raw, y_tr_raw)
-            X_tr_proj = lda_honest.projected_2d
-            X_te_proj = LDASimulator.transform(X_te_raw, lda_honest)
+            X_tr_proj = honest_projection["train"]
+            X_te_proj = honest_projection["test"]
         else:
             # Leaked: already projected using all data
             X_tr_proj = X_2d[idx_train]
@@ -578,14 +585,14 @@ def render_stage5():
         fig_bv.add_vline(x=depth_val, line_width=2, line_dash="dot", line_color="#0f172a", annotation_text=f"Depth: {depth_val}")
 
         fig_bv.update_layout(
-            title=f"Generalization Curve: {'⚠️ Leaked Reduction (Overly Optimistic)' if is_leaked else '✅ Honest Out-of-Sample Split'}",
+            title=f"Validation curve: {'Leaked representation' if is_leaked else 'Train-only representation'}",
             xaxis=dict(title="Tree Maximum Depth (max_depth)", dtick=1),
-            yaxis=dict(title="Classification Accuracy (%)", range=[30, 105]),
+            yaxis=dict(title="Classification Accuracy (%)", range=[0, 105]),
             height=360,
             margin=dict(l=20, r=20, b=20, t=35),
             legend=dict(x=0.05, y=0.15),
         )
-        st.plotly_chart(fig_bv, use_container_width=True)
+        st.plotly_chart(fig_bv, use_container_width=True, theme=None)
 
         curr_train = train_accs[depth_val - 1] * 100
         curr_test = test_accs[depth_val - 1] * 100
@@ -594,18 +601,32 @@ def render_stage5():
         st.markdown(
             f"""
             <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:8px; padding:12px; font-size:0.85rem;">
-              <b>Operating Point:</b> <code>max_depth = {depth_val}</code> | 
-              <b>Train Accuracy:</b> <code>{curr_train:.1f}%</code> | 
-              <b>Held-Out Test Accuracy:</b> <code>{curr_test:.1f}%</code> | 
+              <b>Operating Point:</b> <code>max_depth = {depth_val}</code> |
+              <b>Train Accuracy:</b> <code>{curr_train:.1f}%</code> |
+              <b>Validation Accuracy:</b> <code>{curr_test:.1f}%</code> |
               <b>Generalization Gap:</b> <code>{gap:.1f}%</code><br>
               {
-                "⚠️ <b>High Variance (Overfitting):</b> The tree is memorizing idiosyncratic noise in the training set." if gap > 20
-                else "⚠️ <b>High Bias (Underfitting):</b> The tree is too shallow to capture decision structure." if depth_val <= 2
-                else "✅ <b>Optimal Inductive Bias:</b> Healthy balance between bias and variance."
+                "A large train-validation gap is a reason to investigate overfitting." if gap > 20
+                else "A single split cannot establish the optimal depth or a bias-variance decomposition."
               }
               <br><br>
-              <b>💡 Data Leakage Lesson:</b> {'When dimensionality reduction is fitted on the entire dataset beforehand, test instances are subtly influenced by training centroids and class labels during scatter calculation, inflating validation performance artificially. The Honest Split fits reduction exclusively on training data and projects test vectors out-of-sample.' if is_leaked else 'In this Honest Split mode, the LDA transformation matrix was fit strictly on the 44 training instances. The 20 held-out test papers were projected without ever exposing their labels, delivering true out-of-sample generalization metrics.'}
+              <b>Protocol:</b> {'Vocabulary, IDF and LDA were fitted using the full corpus, including validation information. This invalidates independent evaluation even when its score is lower.' if is_leaked else 'Vocabulary, IDF and LDA were fitted on training rows only. Validation rows are transformed with those frozen parameters. Exploring depth on these rows makes them a validation set, not a final test set.'}
             </div>
             """,
             unsafe_allow_html=True,
         )
+
+
+def render_stage5():
+    from glassbox.utils.pipeline import lens_selector
+    from glassbox.modules.comparisons import render_comparison
+    from glassbox.modules.investigations import render_leakage
+    lens = lens_selector(5, ["Playground", "Evaluation", "Compare implementations", "Failure spotlight"])
+    if lens == "Failure spotlight":
+        render_leakage()
+    elif lens == "Evaluation":
+        _render_stage5_playground(evaluation_only=True)
+    elif lens == "Compare implementations":
+        render_comparison(5)
+    else:
+        _render_stage5_playground()

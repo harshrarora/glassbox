@@ -10,7 +10,7 @@ import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 from scipy.cluster.hierarchy import dendrogram
-from glassbox.fixtures.arxiv_corpus import get_arxiv_corpus
+from glassbox.data.arxiv_corpus import get_arxiv_corpus
 from glassbox.utils.visual_components import render_hero_card
 from glassbox.core.geometry import fit_pca_3d, compute_svd_rank_k
 from glassbox.core.classifiers import LDASimulator
@@ -29,7 +29,7 @@ CATEGORY_COLORS = {
 }
 
 
-def render_stage4():
+def _render_stage4_playground():
     render_hero_card(
         stage_title="Stage 4: Linear Algebra & Dimensionality Reduction",
         what_text="Compressing high-dimensional vocabulary spaces into printable 2D and 3D geometric coordinates using unsupervised PCA/SVD, supervised LDA, and unsupervised clustering.",
@@ -40,13 +40,14 @@ def render_stage4():
     all_abstracts = [p.abstract for p in papers]
     categories = [p.category for p in papers]
 
-    vec = TextVectorizer().fit(all_abstracts)
+    from glassbox.utils.pipeline import vectorizer, settings, coordinates, resolve_terms
+    vec = vectorizer().fit(all_abstracts)
     _, _, X_all = vec.transform(all_abstracts)
 
     tab_pca_svd, tab_lda, tab_cluster = st.tabs([
-        "🌐 PCA / SVD 3D Simulator & Rank-k Snapping",
-        "⚖️ Linear Discriminant Analysis (S_W & S_B Scatter Matrices)",
-        "🧬 Unsupervised Clustering & Dendrogram Explorer",
+        "PCA / SVD",
+        "Fisher LDA",
+        "Clustering",
     ])
 
     # -------------------------------------------------------------------------
@@ -63,14 +64,21 @@ def render_stage4():
                 "Architecture Triplet: ['convolutional', 'transformer', 'gradient']": ["convolutional", "transformer", "gradient"],
                 "Theory Triplet: ['visual', 'translation', 'convex']": ["visual", "translation", "convex"],
             }
-            chosen_preset = st.selectbox("Feature Coordinate Presets:", options=list(triplet_presets.keys()))
+            cfg = settings()
+            default_preset = list(triplet_presets.values()).index(cfg["terms"]) if cfg["terms"] in triplet_presets.values() else 0
+            chosen_preset = st.selectbox("Feature Coordinate Presets:", options=list(triplet_presets.keys()), index=default_preset)
             pca_terms = triplet_presets[chosen_preset]
+            cfg["terms"] = pca_terms
 
         with col_svd:
-            rank_k = st.slider("Truncated SVD Rank k (Subspace Snapping):", min_value=1, max_value=3, value=2)
+            rank_k = st.slider("Truncated SVD Rank k (Subspace Snapping):", min_value=1, max_value=3, value=settings()["rank"])
+            settings()["rank"] = rank_k
 
-        idx_terms = [vec.vocabulary.get(t, 0) for t in pca_terms]
-        X_3d = X_all[:, idx_terms]
+        pca_terms = resolve_terms(vec, pca_terms)
+        X_3d = coordinates(vec, X_all, pca_terms)
+        missing = [t for t in pca_terms if t not in vec.vocabulary]
+        if missing:
+            st.warning("Absent after preprocessing (shown as zero columns): " + ", ".join(missing))
 
         pca_res = fit_pca_3d(X_3d, pca_terms)
         svd_res = compute_svd_rank_k(X_3d, k=rank_k)
@@ -147,17 +155,17 @@ def render_stage4():
                 height=480,
                 margin=dict(l=0, r=0, b=0, t=30),
             )
-            st.plotly_chart(fig_3d, use_container_width=True)
+            st.plotly_chart(fig_3d, use_container_width=True, theme=None)
 
         with col_diag:
-            st.markdown("#### 📐 Scree Plot & Covariance Heatmap")
+            st.markdown("####  Scree Plot & Covariance Heatmap")
             # Scree Plot
             cum_var = np.cumsum(pca_res.explained_variance_ratio) * 100
             fig_scree = go.Figure()
             fig_scree.add_trace(go.Bar(x=["PC1", "PC2", "PC3"], y=pca_res.explained_variance_ratio * 100, name="Individual %", marker_color="#3b82f6"))
             fig_scree.add_trace(go.Scatter(x=["PC1", "PC2", "PC3"], y=cum_var, name="Cumulative %", line=dict(color="#f59e0b", width=3)))
             fig_scree.update_layout(title="Scree Plot: Explained Variance Ratio", height=230, margin=dict(l=20, r=20, b=20, t=35))
-            st.plotly_chart(fig_scree, use_container_width=True)
+            st.plotly_chart(fig_scree, use_container_width=True, theme=None)
 
             # Covariance Matrix Heatmap
             fig_cov = px.imshow(
@@ -168,7 +176,7 @@ def render_stage4():
                 title="Sample Covariance Matrix Σ",
             )
             fig_cov.update_layout(height=210, margin=dict(l=20, r=20, b=20, t=35))
-            st.plotly_chart(fig_cov, use_container_width=True)
+            st.plotly_chart(fig_cov, use_container_width=True, theme=None)
 
     # -------------------------------------------------------------------------
     # TAB 2: Multiclass LDA Simulator
@@ -189,7 +197,7 @@ def render_stage4():
                 title="Within-Class Scatter Matrix S_W = ∑_c ∑ (x - μ_c)(x - μ_c)ᵀ",
             )
             fig_sw.update_layout(height=260, margin=dict(l=20, r=20, b=20, t=35))
-            st.plotly_chart(fig_sw, use_container_width=True)
+            st.plotly_chart(fig_sw, use_container_width=True, theme=None)
 
         with col_sb:
             fig_sb = px.imshow(
@@ -200,7 +208,7 @@ def render_stage4():
                 title="Between-Class Scatter Matrix S_B = ∑_c N_c (μ_c - μ)(μ_c - μ)ᵀ",
             )
             fig_sb.update_layout(height=260, margin=dict(l=20, r=20, b=20, t=35))
-            st.plotly_chart(fig_sb, use_container_width=True)
+            st.plotly_chart(fig_sb, use_container_width=True, theme=None)
 
         # 2D Projection Comparison: PCA vs LDA
         col_lda_proj, col_pca_proj = st.columns(2)
@@ -217,7 +225,7 @@ def render_stage4():
                 height=380,
                 margin=dict(l=20, r=20, b=20, t=35),
             )
-            st.plotly_chart(fig_lda_2d, use_container_width=True)
+            st.plotly_chart(fig_lda_2d, use_container_width=True, theme=None)
 
         with col_pca_proj:
             fig_pca_2d = go.Figure()
@@ -232,13 +240,13 @@ def render_stage4():
                 height=380,
                 margin=dict(l=20, r=20, b=20, t=35),
             )
-            st.plotly_chart(fig_pca_2d, use_container_width=True)
+            st.plotly_chart(fig_pca_2d, use_container_width=True, theme=None)
 
     # -------------------------------------------------------------------------
     # TAB 3: Unsupervised Clustering & Dendrogram Explorer
     # -------------------------------------------------------------------------
     with tab_cluster:
-        st.markdown("### 🧬 Unsupervised Clustering & Hierarchical Dendrogram Explorer")
+        st.markdown("###  Unsupervised Clustering & Hierarchical Dendrogram Explorer")
         st.caption("Discover natural cluster structure without ground-truth labels. Watch K-Means centroids migrate to convergence and inspect hierarchical tree linkages.")
 
         cluster_subview = st.radio(
@@ -315,10 +323,10 @@ def render_stage4():
 
             col_km_plot, col_km_stats = st.columns([2.0, 1.2])
             with col_km_plot:
-                st.plotly_chart(fig_km, use_container_width=True)
+                st.plotly_chart(fig_km, use_container_width=True, theme=None)
             with col_km_stats:
-                st.markdown("#### 📐 Centroid Metrics & Convergence")
-                status_txt = "✅ Converged" if step_t >= max_step else f"⏳ Migrating (Step {step_t}/{max_step})"
+                st.markdown("####  Centroid Metrics & Convergence")
+                status_txt = " Converged" if step_t >= max_step else f"⏳ Migrating (Step {step_t}/{max_step})"
                 st.markdown(
                     f"""
                     <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:8px; padding:12px; margin-bottom:12px;">
@@ -343,7 +351,7 @@ def render_stage4():
                 )
 
             st.markdown("---")
-            show_elbow = st.checkbox("📊 Show Elbow Method & Silhouette Curve Analysis (K = 2..8)", value=True)
+            show_elbow = st.checkbox(" Show Elbow Method & Silhouette Curve Analysis (K = 2..8)", value=True)
             if show_elbow:
                 elbow_data = compute_elbow_and_silhouette(pts_2d, k_range=list(range(2, 9)))
                 fig_elbow = go.Figure()
@@ -371,17 +379,17 @@ def render_stage4():
                 fig_elbow.update_layout(
                     title="The Elbow Method (WCSS) & Silhouette Coefficient Across K",
                     xaxis=dict(title="Number of Clusters K", dtick=1),
-                    yaxis=dict(title="Within-Cluster Sum of Squares (WCSS)", titlefont=dict(color="#6366f1")),
-                    yaxis2=dict(title="Silhouette Coefficient", titlefont=dict(color="#10b981"), overlaying="y", side="right"),
+                    yaxis=dict(title=dict(text="Within-Cluster Sum of Squares (WCSS)", font=dict(color="#6366f1"))),
+                    yaxis2=dict(title=dict(text="Silhouette Coefficient", font=dict(color="#10b981")), overlaying="y", side="right"),
                     legend=dict(x=0.65, y=0.95),
                     height=350,
                     margin=dict(l=20, r=20, b=20, t=35),
                 )
-                st.plotly_chart(fig_elbow, use_container_width=True)
-                st.info("💡 **Pedagogical Takeaway:** Notice the sharp inflection point (the 'Elbow') at **K = 4**, corresponding to our 4 distinct scientific domains (`cs.CV`, `cs.CL`, `cs.LG`, `stat.ML`). The silhouette coefficient reaches its peak here, demonstrating that the natural data manifold has 4 dominant clusters without needing supervisory labels.")
+                st.plotly_chart(fig_elbow, use_container_width=True, theme=None)
+                st.info(" **Pedagogical Takeaway:** Notice the sharp inflection point (the 'Elbow') at **K = 4**, corresponding to our 4 distinct scientific domains (`cs.CV`, `cs.CL`, `cs.LG`, `stat.ML`). The silhouette coefficient reaches its peak here, demonstrating that the natural data manifold has 4 dominant clusters without needing supervisory labels.")
 
         else:
-            st.markdown("#### 🌳 Hierarchical Agglomerative Clustering (HAC) Tree")
+            st.markdown("####  Hierarchical Agglomerative Clustering (HAC) Tree")
             st.caption("Agglomerative bottom-up clustering merges closest pairs iteratively. Inspect how different linkage criteria alter the tree hierarchy.")
 
             col_link, col_cut = st.columns([1.5, 1.5])
@@ -436,3 +444,16 @@ def render_stage4():
                 """,
                 unsafe_allow_html=True,
             )
+
+
+def render_stage4():
+    from glassbox.utils.pipeline import lens_selector
+    from glassbox.modules.comparisons import render_comparison
+    from glassbox.modules.investigations import render_rotation
+    lens = lens_selector(4, ["Playground", "Compare implementations", "Failure spotlight"])
+    if lens == "Failure spotlight":
+        render_rotation()
+    elif lens == "Compare implementations":
+        render_comparison(4)
+    else:
+        _render_stage4_playground()

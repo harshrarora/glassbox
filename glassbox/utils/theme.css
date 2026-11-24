@@ -1,0 +1,39 @@
+:root { --ink:#0f172a; --muted:#64748b; --line:#e2e8f0; --accent:#4f46e5; }
+html, body, .stApp { font-family: Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
+.stApp { background:#f8fafc; color:var(--ink); }
+[data-testid="stHeader"] { background:#f8fafcee; }
+[data-testid="stMainBlockContainer"] { max-width:1440px; padding:4rem 2.5rem 3rem; }
+[data-testid="stSidebar"] { background:#fff; border-right:1px solid var(--line); }
+h1,h2,h3,h4 { font-family:Inter,-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif !important; color:var(--ink); letter-spacing:-.025em; }
+h1 { font-size:clamp(1.8rem,2.6vw,2.7rem) !important; font-weight:650 !important; line-height:1.18 !important; padding-bottom:.6rem !important; }
+h2 { font-size:1.55rem !important; font-weight:600 !important; }
+h3 { font-size:1.15rem !important; font-weight:600 !important; }
+p,li { line-height:1.6; }
+.brand { font-size:1.55rem; font-weight:750; letter-spacing:-.06em; color:#0f172a; white-space:nowrap; }
+.brand-mark { color:#4f46e5; margin-right:.35rem; }
+.eyebrow { color:#4f46e5; font-family:'JetBrains Mono',Consolas,monospace; font-size:.7rem; font-weight:600; letter-spacing:.1em; margin:.7rem 0 .3rem; }
+.standfirst { color:#475569; font-size:1rem; max-width:880px; margin-bottom:.9rem; }
+.method-line { display:none; }
+.finding { border:1px solid #c7d2fe; border-left:3px solid #6366f1; padding:.8rem 1rem; border-radius:8px; margin:.5rem 0; background:#eef2ff; }
+.finding small { font-family:Consolas,monospace; color:#4338ca; font-size:.7rem; letter-spacing:.08em; }
+.finding p { margin:.2rem 0 .4rem; }
+.st-key-pipeline_navigation { background:#fff; border:1px solid var(--line); border-radius:10px; padding:.6rem; box-shadow:0 2px 6px #0f172a05; }
+.st-key-pipeline_navigation button { font-size:.85rem; }
+[data-testid="stMetric"] { padding:.8rem 1rem; background:#fff; border:1px solid var(--line); border-radius:8px; }
+[data-testid="stMetricLabel"] { color:#64748b; font-size:.78rem; }
+[data-testid="stMetricValue"] { font-family:Consolas,monospace; font-size:1.5rem !important; font-weight:600; }
+[data-testid="stPlotlyChart"] { background:#fff; border:1px solid var(--line); border-radius:10px; padding:.5rem; }
+.stButton button, .stDownloadButton button { border-radius:7px; box-shadow:none; min-height:2.5rem; }
+.stButton button[kind="primary"] { background:#4f46e5; border-color:#4f46e5; color:white; }
+.stButton button[kind="secondary"],.stDownloadButton button { background:#fff; border:1px solid #dbe2ea; color:#334155; }
+button:focus-visible,input:focus-visible { outline:3px solid #818cf8 !important; outline-offset:3px; }
+[data-testid="stExpander"] { background:#fff; border:1px solid var(--line); border-radius:8px; }
+[data-testid="stCode"] { font-family:'JetBrains Mono',Consolas,monospace; }
+hr { border-color:var(--line); margin:1rem 0; }
+@media(max-width:760px) {
+ [data-testid="stMainBlockContainer"] { padding:3.5rem .8rem 2rem; }
+ .st-key-pipeline_navigation [data-testid="stHorizontalBlock"] { flex-wrap:nowrap !important; overflow-x:auto; }
+ .st-key-pipeline_navigation [data-testid="stColumn"] { min-width:115px !important; flex:0 0 115px !important; }
+ .brand { font-size:1.4rem; }
+}
+@media(prefers-reduced-motion:reduce) { *,*::before,*::after { animation:none !important; transition:none !important; } }

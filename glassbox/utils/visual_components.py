@@ -31,7 +31,7 @@ def render_stepper_bar(current_stage: int) -> None:
             is_active = (stage_num == current_stage)
             is_past = (stage_num < current_stage)
 
-            bg_color = "#2563eb" if is_active else ("#10b981" if is_past else "#f1f5f9")
+            bg_color = "#2563eb" if is_active else ("#27644a" if is_past else "#f1f5f9")
             text_color = "#ffffff" if (is_active or is_past) else "#64748b"
             border = "2px solid #1d4ed8" if is_active else ("1px solid #059669" if is_past else "1px solid #cbd5e1")
             icon = "🎯" if is_active else ("✓" if is_past else f"{stage_num}.")
@@ -49,25 +49,12 @@ def render_stepper_bar(current_stage: int) -> None:
 
 
 def render_hero_card(stage_title: str, what_text: str, why_text: str) -> None:
-    """Renders the golden 2-sentence 'What & Why' Hero Card."""
-    st.markdown(
-        f"""
-        <div style="background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
-                    border: 1px solid #334155; border-radius: 12px; padding: 18px 24px;
-                    color: #f8fafc; margin-bottom: 20px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);">
-          <div style="font-size: 1.5rem; font-weight: 800; color: #60a5fa; margin-bottom: 8px;">
-            {stage_title}
-          </div>
-          <div style="font-size: 0.95rem; line-height: 1.6; margin-bottom: 8px;">
-            <b style="color: #38bdf8;">💡 What is happening:</b> {what_text}
-          </div>
-          <div style="font-size: 0.95rem; line-height: 1.6;">
-            <b style="color: #4ade80;">🎯 Why we are doing this:</b> {why_text}
-          </div>
-        </div>
-        """,
-        unsafe_allow_html=True,
-    )
+    """Compact chapter introduction with optional context."""
+    import re
+    title = re.sub(r"^Stage \d+:\s*", "", stage_title)
+    st.caption(what_text)
+    with st.expander("Why this matters"):
+        st.write(why_text)
 
 
 def render_contraction_meter(contraction_stats: Dict[str, Any]) -> None:
@@ -95,7 +82,7 @@ def render_contraction_meter(contraction_stats: Dict[str, Any]) -> None:
     fig_bar = go.Figure()
     stages = ["Raw Words", "Post-Regex", "Post-Stopwords", "Post-Lemmas"]
     counts = [v_raw, v_regex, v_stop, v_lemma]
-    colors = ["#94a3b8", "#38bdf8", "#f59e0b", "#10b981"]
+    colors = ["#94a3b8", "#38bdf8", "#9b7d3e", "#27644a"]
 
     fig_bar.add_trace(
         go.Bar(
@@ -112,7 +99,7 @@ def render_contraction_meter(contraction_stats: Dict[str, Any]) -> None:
         margin=dict(l=20, r=20, b=20, t=35),
         yaxis=dict(title="Unique Vocabulary Tokens"),
     )
-    st.plotly_chart(fig_bar, use_container_width=True)
+    st.plotly_chart(fig_bar, use_container_width=True, theme=None)
 
 
 def render_living_diff_text(

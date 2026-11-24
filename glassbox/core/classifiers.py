@@ -67,8 +67,13 @@ class LDASimulator:
         S_W_reg = S_W + reg_eps * np.eye(p)
 
         # 5. Solve generalized eigenproblem: (S_W^{-1} @ S_B) w = lambda w
-        inv_SW_SB = np.linalg.pinv(S_W_reg) @ S_B
-        eigenvalues, eigenvectors = np.linalg.eig(inv_SW_SB)
+        # Whiten the symmetric generalized problem instead of discarding
+        # imaginary parts of a nonsymmetric inverse-product eigensolution.
+        sw_values, sw_vectors = np.linalg.eigh(S_W_reg)
+        whitening = (sw_vectors * (1.0 / np.sqrt(sw_values))) @ sw_vectors.T
+        symmetric = whitening @ S_B @ whitening
+        eigenvalues, white_vectors = np.linalg.eigh((symmetric + symmetric.T) / 2)
+        eigenvectors = whitening @ white_vectors
 
         # Keep real parts
         real_eigs = np.real(eigenvalues)
