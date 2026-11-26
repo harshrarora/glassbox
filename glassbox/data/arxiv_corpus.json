@@ -88,12 +88,12 @@
     "year": 2016
   },
   {
-    "id": "arxiv:1206.5538",
-    "title": "ImageNet Classification with Deep Convolutional Neural Networks",
-    "abstract": "We trained a large deep convolutional neural network to classify high-resolution image benchmarks in the ImageNet challenge. The network incorporates GPU-accelerated convolution routines, rectified linear units (ReLU) to accelerate convergence, and dropout regularization to prevent severe overfitting across dense classification layers.",
+    "id": "arxiv:1409.4842",
+    "title": "Going Deeper with Convolutions",
+    "abstract": "We propose a deep convolutional neural network architecture codenamed Inception, which sets the state of the art for classification and detection in ImageNet. The network incorporates multi-scale convolutional filter banks to capture visual context, rectified linear units (ReLU) to accelerate convergence, and dimension reduction layers to maintain computing efficiency across deep classification pipelines.",
     "category": "cs.CV",
-    "authors": "A. Krizhevsky, I. Sutskever, G. E. Hinton",
-    "year": 2012
+    "authors": "C. Szegedy, W. Liu, Y. Jia, P. Sermanet et al.",
+    "year": 2014
   },
   {
     "id": "arxiv:2103.00020",
@@ -242,7 +242,7 @@
   {
     "id": "arxiv:2201.11903",
     "title": "Chain-of-Thought Prompting Elicits Reasoning in Large Language Models",
-    "abstract": "We explore how generating a series of intermediate reasoning steps\u2014a chain of thought\u2014substantially enhances the ability of large language models to perform complex reasoning. Chain-of-thought prompting elicits emergent mathematical and symbolic reasoning capabilities on challenging arithmetic, common-sense, and symbolic manipulation benchmarks.",
+    "abstract": "We explore how generating a series of intermediate reasoning steps (a chain of thought) substantially enhances the ability of large language models to perform complex reasoning. Chain-of-thought prompting elicits emergent mathematical and symbolic reasoning capabilities on challenging arithmetic, common-sense, and symbolic manipulation benchmarks.",
     "category": "cs.CL",
     "authors": "J. Wei, X. Wang, D. Schuurmans, M. Bosma, E. Chi et al.",
     "year": 2022
@@ -273,11 +273,11 @@
   },
   {
     "id": "arxiv:1207.0580",
-    "title": "Dropout: A Simple Way to Prevent Neural Networks from Overfitting",
+    "title": "Improving Neural Networks by Preventing Co-Adaptation of Feature Detectors",
     "abstract": "Deep neural networks with millions of parameters have immense expressive capacity but are prone to overfitting. Dropout prevents co-adaptation of feature detectors by randomly dropping units and their connections during training. This technique approximates model averaging over exponentially many thinned networks, yielding significant generalization improvements.",
     "category": "cs.LG",
-    "authors": "N. Srivastava, G. Hinton, A. Krizhevsky, I. Sutskever, R. Salakhutdinov",
-    "year": 2014
+    "authors": "G. E. Hinton, N. Srivastava, A. Krizhevsky, I. Sutskever, R. Salakhutdinov",
+    "year": 2012
   },
   {
     "id": "arxiv:1812.11118",
@@ -338,7 +338,7 @@
   {
     "id": "arxiv:1710.10345",
     "title": "The Implicit Bias of Gradient Descent on Linearly Separable Data",
-    "abstract": "We analyze gradient descent on linearly separable classification problems with unregularized logistic loss. Although the loss asymptotically approaches zero as weights grow to infinity, the normalized weight vector converges strictly to the maximum-margin direction\u2014the exact solution of hard-margin Support Vector Machines\u2014revealing an implicit geometric inductive bias.",
+    "abstract": "We analyze gradient descent on linearly separable classification problems with unregularized logistic loss. Although the loss asymptotically approaches zero as weights grow to infinity, the normalized weight vector converges strictly to the maximum-margin direction (the exact solution of hard-margin Support Vector Machines), revealing an implicit geometric inductive bias.",
     "category": "cs.LG",
     "authors": "D. Soudry, E. Hoffer, M. S. Nacson, S. Gunasekar, N. Srebro",
     "year": 2017
@@ -376,12 +376,12 @@
     "year": 2019
   },
   {
-    "id": "arxiv:2003.00307",
+    "id": "arxiv:1912.02292",
     "title": "Deep Double Descent: Where Bigger Models and More Data Hurt",
     "abstract": "We demonstrate that the double descent phenomenon extends beyond model size to training epochs and dataset sizes across deep convolutional networks and Transformers. In the critical regime near the interpolation boundary, increasing model capacity or training time can paradoxically impair test performance before generalization improves in the overparameterized regime.",
     "category": "cs.LG",
     "authors": "P. Nakkiran, G. Kaplun, Y. Bansal, T. Yang, B. Barak, I. Sutskever",
-    "year": 2020
+    "year": 2019
   },
   {
     "id": "arxiv:1107.2490",
@@ -453,7 +453,7 @@
     "abstract": "Standard statistical learning assumes identical training and testing distributions, rendering models vulnerable to covariate shifts. We formulate distributionally robust optimization using Wasserstein metric balls around the empirical distribution. The robust dual formulation yields regularized surrogate loss functions that guarantee worst-case risk bounds under data shifts.",
     "category": "stat.ML",
     "authors": "J. C. Duchi, H. Namkoong",
-    "year": 2018
+    "year": 2016
   },
   {
     "id": "arxiv:1711.05597",
@@ -490,7 +490,7 @@
   {
     "id": "arxiv:1712.07897",
     "title": "Non-Convex Optimization for Machine Learning: Algorithms and Theory",
-    "abstract": "While convex optimization provides rigorous global optimality guarantees, many modern machine learning problems are inherently non-convex. We present algorithmic frameworks\u2014including projected gradient descent, alternating minimization, and matrix factorization\u2014that provide provable global convergence guarantees under structural conditions like strict saddle properties.",
+    "abstract": "While convex optimization provides rigorous global optimality guarantees, many modern machine learning problems are inherently non-convex. We present algorithmic frameworks, including projected gradient descent, alternating minimization, and matrix factorization, that provide provable global convergence guarantees under structural conditions like strict saddle properties.",
     "category": "stat.ML",
     "authors": "P. Jain, P. Kar",
     "year": 2017

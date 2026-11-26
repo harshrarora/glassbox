@@ -172,16 +172,16 @@ ARXIV_PAPERS: List[PaperRecord] = [
         year=2016,
     ),
     PaperRecord(
-        id="arxiv:1206.5538",
-        title="ImageNet Classification with Deep Convolutional Neural Networks",
+        id="arxiv:1409.4842",
+        title="Going Deeper with Convolutions",
         abstract=(
-            "We trained a large deep convolutional neural network to classify high-resolution image benchmarks in the ImageNet challenge. "
-            "The network incorporates GPU-accelerated convolution routines, rectified linear units (ReLU) to accelerate convergence, "
-            "and dropout regularization to prevent severe overfitting across dense classification layers."
+            "We propose a deep convolutional neural network architecture codenamed Inception, which sets the state of the art for classification and detection in ImageNet. "
+            "The network incorporates multi-scale convolutional filter banks to capture visual context, rectified linear units (ReLU) to accelerate convergence, "
+            "and dimension reduction layers to maintain computing efficiency across deep classification pipelines."
         ),
         category="cs.CV",
-        authors="A. Krizhevsky, I. Sutskever, G. E. Hinton",
-        year=2012,
+        authors="C. Szegedy, W. Liu, Y. Jia, P. Sermanet et al.",
+        year=2014,
     ),
     PaperRecord(
         id="arxiv:2103.00020",
@@ -457,15 +457,15 @@ ARXIV_PAPERS: List[PaperRecord] = [
     ),
     PaperRecord(
         id="arxiv:1207.0580",
-        title="Dropout: A Simple Way to Prevent Neural Networks from Overfitting",
+        title="Improving Neural Networks by Preventing Co-Adaptation of Feature Detectors",
         abstract=(
             "Deep neural networks with millions of parameters have immense expressive capacity but are prone to overfitting. "
             "Dropout prevents co-adaptation of feature detectors by randomly dropping units and their connections during training. "
             "This technique approximates model averaging over exponentially many thinned networks, yielding significant generalization improvements."
         ),
         category="cs.LG",
-        authors="N. Srivastava, G. Hinton, A. Krizhevsky, I. Sutskever, R. Salakhutdinov",
-        year=2014,
+        authors="G. E. Hinton, N. Srivastava, A. Krizhevsky, I. Sutskever, R. Salakhutdinov",
+        year=2012,
     ),
     PaperRecord(
         id="arxiv:1812.11118",
@@ -612,7 +612,7 @@ ARXIV_PAPERS: List[PaperRecord] = [
         year=2019,
     ),
     PaperRecord(
-        id="arxiv:2003.00307",
+        id="arxiv:1912.02292",
         title="Deep Double Descent: Where Bigger Models and More Data Hurt",
         abstract=(
             "We demonstrate that the double descent phenomenon extends beyond model size to training epochs and dataset sizes across deep convolutional "
@@ -621,7 +621,7 @@ ARXIV_PAPERS: List[PaperRecord] = [
         ),
         category="cs.LG",
         authors="P. Nakkiran, G. Kaplun, Y. Bansal, T. Yang, B. Barak, I. Sutskever",
-        year=2020,
+        year=2019,
     ),
 
     # -------------------------------------------------------------------------
@@ -733,7 +733,7 @@ ARXIV_PAPERS: List[PaperRecord] = [
         ),
         category="stat.ML",
         authors="J. C. Duchi, H. Namkoong",
-        year=2018,
+        year=2016,
     ),
     PaperRecord(
         id="arxiv:1711.05597",
