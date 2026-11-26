@@ -5,3 +5,16 @@ __pycache__/
 .DS_Store
 .venv/
 release/
+
+# LaTeX build artifacts
+*.aux
+*.log
+*.out
+*.toc
+*.lof
+*.lot
+*.synctex.gz
+ML_Project_Report_Template.pdf
+report/check_pages.py
+
+
