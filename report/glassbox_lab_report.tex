@@ -30,17 +30,21 @@
 \usepackage{color}
 
 % Custom Colors
-\definecolor{headerblue}{RGB}{30, 58, 138}
-\definecolor{darkslate}{RGB}{15, 23, 42}
+\definecolor{headerblue}{RGB}{20, 35, 75}
+\definecolor{darkslate}{RGB}{30, 41, 59}
+\definecolor{accentrule}{RGB}{200, 210, 225}
 
-% Float placement optimizations to keep figures inline with text
+% Float placement optimizations to keep figures nicely placed with text
+\setcounter{topnumber}{4}
+\setcounter{bottomnumber}{4}
+\setcounter{totalnumber}{8}
 \renewcommand{\topfraction}{0.95}
 \renewcommand{\bottomfraction}{0.95}
 \renewcommand{\textfraction}{0.05}
 \renewcommand{\floatpagefraction}{0.85}
-\setlength{\floatsep}{6pt plus 2pt minus 2pt}
-\setlength{\textfloatsep}{8pt plus 2pt minus 2pt}
-\setlength{\intextsep}{6pt plus 2pt minus 2pt}
+\setlength{\floatsep}{8pt plus 2pt minus 2pt}
+\setlength{\textfloatsep}{10pt plus 2pt minus 2pt}
+\setlength{\intextsep}{8pt plus 2pt minus 2pt}
 
 % Compact list environments
 \newenvironment{tightitemize}{%
@@ -60,38 +64,42 @@
   \end{enumerate}%
 }
 
-% Header and Footer Style: Page number bottom center
+% Header and Footer Style: Clean bottom-center page numbering
 \pagestyle{fancy}
 \fancyhf{}
-\cfoot{\thepage}
+\cfoot{\fontsize{10}{12}\selectfont\thepage}
 \renewcommand{\headrulewidth}{0pt}
 \renewcommand{\footrulewidth}{0pt}
 
-% Format Chapter and Section Headings per Guidelines
+% Clean Chapter and Section Headings per Guidelines
 % Main Heading: 16pt Bold, Subheadings: 14pt Bold, Sub-subheadings: 12pt Bold
 \makeatletter
 \def\@makechapterhead#1{%
   \vspace*{2\p@}%
   {\parindent \z@ \raggedright \normalfont
     \ifnum \c@secnumdepth >\m@ne
-        \fontsize{16}{19}\bfseries \color{headerblue} \thechapter. \quad
+        \fontsize{16}{20}\bfseries \color{headerblue} \thechapter. \quad
     \fi
     \interlinepenalty\@M
-    \fontsize{16}{19}\bfseries \color{headerblue} #1\par\nobreak
-    \vskip 8\p@
+    \fontsize{16}{20}\bfseries \color{headerblue} #1\par\nobreak
+    \vskip 4\p@
+    {\color{accentrule}\hrule height 0.8pt}
+    \vskip 10\p@
   }}
 \def\@makeschapterhead#1{%
   \vspace*{2\p@}%
   {\parindent \z@ \raggedright
     \normalfont
     \interlinepenalty\@M
-    \fontsize{16}{19}\bfseries \color{headerblue} #1\par\nobreak
-    \vskip 8\p@
+    \fontsize{16}{20}\bfseries \color{headerblue} #1\par\nobreak
+    \vskip 4\p@
+    {\color{accentrule}\hrule height 0.8pt}
+    \vskip 10\p@
   }}
 \renewcommand\section{\@startsection {section}{1}{\z@}%
                                    {-2.0ex \@plus -0.5ex \@minus -.2ex}%
                                    {0.8ex \@plus.2ex}%
-                                   {\normalfont\fontsize{14}{17}\bfseries\color{darkslate}}}
+                                   {\normalfont\fontsize{14}{17}\bfseries\color{headerblue}}}
 \renewcommand\subsection{\@startsection{subsection}{2}{\z@}%
                                        {-1.6ex\@plus -0.4ex \@minus -.2ex}%
                                        {0.6ex \@plus .2ex}%
@@ -105,32 +113,32 @@
 % -----------------------------------------------------------------------------
 \begin{titlepage}
 \begin{center}
-\vspace*{0.3cm}
+\vspace*{0.2cm}
 
-{\fontsize{19}{24}\bfseries \color{headerblue} GLASSBOX: AN INTERACTIVE FIRST-PRINCIPLES MACHINE LEARNING TEACHING LAB AND MODEL FAILURE DIAGNOSTIC SUITE}
+{\fontsize{18}{23}\bfseries \color{headerblue} GLASSBOX: AN INTERACTIVE FIRST-PRINCIPLES MACHINE LEARNING TEACHING LAB AND MODEL FAILURE DIAGNOSTIC SUITE}
 
-\vspace{1.0cm}
-{\fontsize{12}{16}\itshape Project report submitted in partial fulfillment of the requirements\\
+\vspace{0.8cm}
+{\fontsize{11}{15}\itshape Project report submitted in partial fulfillment of the requirements\\
 for the award of the degree of}
 
 \vspace{0.3cm}
-{\fontsize{13}{17}\bfseries BACHELOR OF TECHNOLOGY\\
-IN COMPUTER SCIENCE AND ENGINEERING}
+{\fontsize{13}{17}\bfseries BACHELOR OF ENGINEERING\\
+IN COMPUTER ENGINEERING}
 
-\vspace{1.1cm}
+\vspace{0.9cm}
 \begin{tabular}{p{3.1in}p{3.1in}}
 \textbf{\large Submitted By:} & \textbf{\large Submitted To:} \\[0.2cm]
-\textbf{Harsh Arora} & \textbf{Mr. Charchit Chandra} \\
-Roll No: 102203000 & Assistant Professor \\
+\textbf{Harsh Rakesh Arora} & \textbf{Ms. MANISHA PANJETA} \\
+Roll No: 1024031161 & Assistant Professor \\
 & \\
-\textbf{[Teammate Name]} & \textbf{Department of Computer Science} \\
-Roll No: [Roll Number 2] & \textbf{and Engineering} \\
+\textbf{Aryan Juneja} & \textbf{Department of Computer Science} \\
+Roll No: 1024030920 & \textbf{and Engineering} \\
 \end{tabular}
 
-\vspace{1.2cm}
-\includegraphics[width=2.5in]{figures/fig1_pipeline_architecture.png}
+\vspace{0.9cm}
+\includegraphics[width=2.1in]{thapar_logo.png}
 
-\vspace{1.1cm}
+\vspace{0.7cm}
 {\fontsize{13}{16}\bfseries DEPARTMENT OF COMPUTER SCIENCE AND ENGINEERING}\\
 {\fontsize{12}{15}\bfseries THAPAR INSTITUTE OF ENGINEERING AND TECHNOLOGY}\\
 {\fontsize{11}{14} PATIALA, PUNJAB -- 147004, INDIA}\\
@@ -149,14 +157,14 @@ Roll No: [Roll Number 2] & \textbf{and Engineering} \\
 % Certificate
 \chapter*{Certificate}
 \thispagestyle{fancy}
-This is to certify that the project report entitled \textbf{``GlassBox: An Interactive First-Principles Machine Learning Teaching Lab and Model Failure Diagnostic Suite''} is a bonafide record of work carried out by \textbf{Harsh Arora} (Roll No. 102203000) and \textbf{[Teammate Name]} (Roll No. [Roll Number 2]) of Bachelor of Technology in Computer Science and Engineering, Thapar Institute of Engineering and Technology, Patiala, during the academic session 2025--2026, under my guidance and supervision for the course \textbf{Machine Learning Lab (UML501)}.
+This is to certify that the project report entitled \textbf{``GlassBox: An Interactive First-Principles Machine Learning Teaching Lab and Model Failure Diagnostic Suite''} is a bonafide record of work carried out by \textbf{Harsh Rakesh Arora} (Roll No. 1024031161) and \textbf{Aryan Juneja} (Roll No. 1024030920) of Bachelor of Engineering in Computer Engineering, Thapar Institute of Engineering and Technology, Patiala, during the academic session 2025--2026, under my guidance and supervision for the course \textbf{Machine Learning (UML501)}.
 
 To the best of my knowledge, the mathematical formulations, software implementations, and empirical failure analyses presented in this report represent the students' original work and have been completed in strict accordance with the academic requirements of the department.
 
 \vspace{2.5cm}
 \noindent
 \begin{tabular}{p{3.1in}p{3.1in}}
-\textbf{Date:} \hrulefill & \textbf{Mr. Charchit Chandra} \\
+\textbf{Date:} \hrulefill & \textbf{Ms. MANISHA PANJETA} \\
 \textbf{Place:} Patiala, Punjab & Assistant Professor, CSED \\
 & Thapar Institute of Engg. \& Tech.
 \end{tabular}
@@ -166,16 +174,16 @@ To the best of my knowledge, the mathematical formulations, software implementat
 % Declaration
 \chapter*{Declaration}
 \thispagestyle{fancy}
-We hereby declare that the project entitled \textbf{``GlassBox: An Interactive First-Principles Machine Learning Teaching Lab and Model Failure Diagnostic Suite''} is our original work carried out as part of the academic curriculum for the \textbf{Machine Learning Lab (UML501)} course at Thapar Institute of Engineering and Technology, Patiala.
+We hereby declare that the project entitled \textbf{``GlassBox: An Interactive First-Principles Machine Learning Teaching Lab and Model Failure Diagnostic Suite''} is our original work carried out as part of the academic curriculum for the \textbf{Machine Learning (UML501)} course at Thapar Institute of Engineering and Technology, Patiala.
 
 We confirm that all mathematical derivations, algorithms implemented from first principles, external references, software libraries, and research papers have been appropriately cited and acknowledged in accordance with standard academic integrity guidelines. This work has not been submitted, in whole or in part, for any other degree, diploma, or academic evaluation.
 
 \vspace{2.5cm}
 \noindent
 \begin{tabular}{p{3.1in}p{3.1in}}
-\textbf{Harsh Arora} & \textbf{[Teammate Name]} \\
-Roll No: 102203000 & Roll No: [Roll Number 2] \\
-B.Tech CSE, 5th Semester & B.Tech CSE, 5th Semester \\
+\textbf{Harsh Rakesh Arora} & \textbf{Aryan Juneja} \\
+Roll No: 1024031161 & Roll No: 1024030920 \\
+B.E. Computer Engineering, 5th Sem. & B.E. Computer Engineering, 5th Sem. \\
 \end{tabular}
 
 \newpage
@@ -183,7 +191,7 @@ B.Tech CSE, 5th Semester & B.Tech CSE, 5th Semester \\
 % Acknowledgement
 \chapter*{Acknowledgement}
 \thispagestyle{fancy}
-We express our deepest gratitude to our project supervisor and course instructor, \textbf{Mr. Charchit Chandra}, Assistant Professor, Department of Computer Science and Engineering, Thapar Institute of Engineering and Technology, for his invaluable guidance, technical critique, and encouragement throughout the design and execution of this project. His emphasis on understanding machine learning algorithms from first principles and inspecting edge-case failure modes deeply shaped our architectural vision.
+We express our deepest gratitude to our project supervisor and course instructor, \textbf{Ms. MANISHA PANJETA}, Assistant Professor, Department of Computer Science and Engineering, Thapar Institute of Engineering and Technology, for her invaluable guidance, technical critique, and encouragement throughout the design and execution of this project. Her emphasis on understanding machine learning algorithms from first principles and inspecting edge-case failure modes deeply shaped our architectural vision.
 
 We also thank the \textbf{Department of Computer Science and Engineering} and the administration of \textbf{Thapar Institute of Engineering and Technology} for providing the academic infrastructure, computing facilities, and reference curriculum resources that enabled this project.
 
@@ -191,7 +199,7 @@ Finally, we thank our peers and families for their continuous support and insigh
 
 \vspace{1.5cm}
 \noindent
-\textbf{Harsh Arora} \& \textbf{[Teammate Name]} \\
+\textbf{Harsh Rakesh Arora} \& \textbf{Aryan Juneja} \\
 Department of Computer Science and Engineering \\
 Thapar Institute of Engineering and Technology, Patiala
 
@@ -370,7 +378,7 @@ Table~\ref{tab:corpus_stats} summarizes the quantitative lexical statistics acro
 
 \begin{figure}[!ht]
 \centering
-\includegraphics[width=0.64\textwidth]{figures/fig2_corpus_eda.png}
+\includegraphics[width=0.88\textwidth]{figures/fig2_corpus_eda.png}
 \caption[Corpus Exploratory Data Analysis]{Exploratory Data Analysis: (a) Category balance across the 64 curated research papers; (b) Boxplot distribution of abstract word lengths across domains.}
 \label{fig:corpus_eda}
 \end{figure}
@@ -385,7 +393,7 @@ GlassBox follows a sequential, modular six-stage pipeline that guides the studen
 
 \begin{figure}[!ht]
 \centering
-\includegraphics[width=0.74\textwidth]{figures/fig1_pipeline_architecture.png}
+\includegraphics[width=0.92\textwidth]{figures/fig1_pipeline_architecture.png}
 \caption[System Architecture of GlassBox]{System Architecture of the GlassBox Six-Stage Machine Learning Pipeline.}
 \label{fig:pipeline_arch}
 \end{figure}
@@ -427,7 +435,7 @@ The optimal discriminant directions correspond to the leading eigenvectors of $S
 
 \begin{figure}[!ht]
 \centering
-\includegraphics[width=0.68\textwidth]{figures/fig3_pca_vs_lda.png}
+\includegraphics[width=0.88\textwidth]{figures/fig3_pca_vs_lda.png}
 \caption[Dimensionality Reduction: PCA vs LDA]{Dimensionality Reduction Comparison: (a) Unsupervised PCA capturing total variance; (b) Supervised Fisher LDA achieving high cluster separation by contracting within-class scatter.}
 \label{fig:pca_vs_lda}
 \end{figure}
@@ -442,7 +450,7 @@ The Within-Cluster Sum of Squares (WCSS / Inertia) and Silhouette coefficients a
 
 \begin{figure}[!ht]
 \centering
-\includegraphics[width=0.68\textwidth]{figures/fig4_clustering_dendrogram.png}
+\includegraphics[width=0.88\textwidth]{figures/fig4_clustering_dendrogram.png}
 \caption[Clustering Dendrogram and Centroids]{Unsupervised Clustering Explorer: (a) Hierarchical Agglomerative Clustering dendrogram using Ward's linkage; (b) Converged K-Means clusters ($K=4$) with migratory centroids.}
 \label{fig:clustering_hac}
 \end{figure}
@@ -486,10 +494,11 @@ The GlassBox repository is structured into modular Python packages:
 \end{tightitemize}
 
 \section{Model Configurations and Hyperparameters}
-Table~\ref{tab:hyperparams} summarizes the operating hyperparameters utilized across all experiments.
+Table~\ref{tab:hyperparams} summarizes the operating hyperparameters utilized across all experiments, while Section~\ref{sec:ui_demo} describes the live laboratory application.
 
 \begin{table}[!ht]
 \centering
+\renewcommand{\arraystretch}{0.88}
 \caption[Experimental Hyperparameters]{Experimental Hyperparameter Configurations Across Pipeline Stages}
 \label{tab:hyperparams}
 \small
@@ -509,11 +518,12 @@ Table~\ref{tab:hyperparams} summarizes the operating hyperparameters utilized ac
 \end{table}
 
 \section{Interactive Laboratory Interface and Presentation Mode}
+\label{sec:ui_demo}
 To facilitate rapid live demonstration during evaluation, GlassBox features a responsive web interface deployed on Streamlit Cloud (Figure~\ref{fig:app_ui}). Users can seamlessly step through pipeline stages, inspect intermediate matrices via coordinate microscopes, and toggle real-time reference comparisons.
 
 \begin{figure}[!ht]
 \centering
-\includegraphics[width=0.64\textwidth]{figures/fig_app_ui.jpg}
+\includegraphics[width=0.70\textwidth]{figures/fig_app_ui.jpg}
 \caption[GlassBox User Interface]{Interactive GlassBox User Interface Deployed Live on Streamlit Cloud.}
 \label{fig:app_ui}
 \end{figure}
@@ -546,7 +556,7 @@ As shown in Figure~\ref{fig:classifier_eval}, Linear SVM achieved the highest pe
 
 \begin{figure}[!ht]
 \centering
-\includegraphics[width=0.68\textwidth]{figures/fig5_classifier_evaluation.png}
+\includegraphics[width=0.88\textwidth]{figures/fig5_classifier_evaluation.png}
 \caption[Supervised Classifier Evaluation]{Supervised Model Evaluation: (a) Test accuracy comparison across syllabus classifiers; (b) Linear SVM confusion matrix on the held-out evaluation partition.}
 \label{fig:classifier_eval}
 \end{figure}
@@ -556,7 +566,7 @@ A critical requirement of GlassBox is verifying that scratch mathematical implem
 
 \begin{figure}[!ht]
 \centering
-\includegraphics[width=0.66\textwidth]{figures/fig6_parity_verification.png}
+\includegraphics[width=0.88\textwidth]{figures/fig6_parity_verification.png}
 \caption[Numerical Parity Verification]{First-Principles Numerical Parity: (a) Parity plot showing exact alignment along the $y = x$ identity line; (b) Residual error distribution proving $\|\Delta\|_\infty \le 1.11 \times 10^{-16}$.}
 \label{fig:parity_scatter}
 \end{figure}
@@ -577,7 +587,7 @@ To isolate the destructive impact of data leakage, we construct a synthetic cont
 
 \begin{figure}[!ht]
 \centering
-\includegraphics[width=0.50\textwidth]{figures/fig7_leakage_curves.png}
+\includegraphics[width=0.72\textwidth]{figures/fig7_leakage_curves.png}
 \caption[Data Leakage Investigation]{Data Leakage Investigation: Honest representation fitting preserves true chance performance (25\%), while leaked representation produces an artificial 78.3\% validation score.}
 \label{fig:leakage_curves}
 \end{figure}
@@ -599,7 +609,7 @@ A positive influence score predicts that removing training point $z$ will decrea
 
 \begin{figure}[!ht]
 \centering
-\includegraphics[width=0.54\textwidth]{figures/fig8_model_mri_counterfactual.png}
+\includegraphics[width=0.58\textwidth]{figures/fig8_model_mri_counterfactual.png}
 \caption[Model MRI Counterfactual Validation]{Model MRI: Decision boundary shift under counterfactual leave-one-out retraining following the removal of the top positive influence training exemplar.}
 \label{fig:model_mri}
 \end{figure}

@@ -16,5 +16,10 @@ release/
 *.synctex.gz
 ML_Project_Report_Template.pdf
 report/check_pages.py
+report/glassbox_viva_defense_guide.*
+report/compile_defense_guide.py
+report/update_tex_and_compile.py
+report/X7.png
+report/thapar_logo_cropped.png
 
 
